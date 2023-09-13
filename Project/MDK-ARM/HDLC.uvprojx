@@ -503,6 +503,11 @@
               <FileType>1</FileType>
               <FilePath>.\Protocol.c</FilePath>
             </File>
+            <File>
+              <FileName>Protocol.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Protocol.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
