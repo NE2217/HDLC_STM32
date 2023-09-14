@@ -26,3 +26,11 @@ hdlc\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash.h
 hdlc\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_flash_ex.h
 hdlc\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr.h
 hdlc\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_uart.h
+hdlc\main.o: ..\MDK-ARM\Protocol.h
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\iostream
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\iosfwd
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\rw/_defs.h
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\rw/_config.h
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\rw/config.h
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\cwchar
+hdlc\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\wchar.h
