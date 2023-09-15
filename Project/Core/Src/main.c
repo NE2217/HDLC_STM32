@@ -32,9 +32,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUF_LEN					10u
-#define TIME_COUNT			500u //ms
-
+#define BUF_LEN					6u
+#define TIME_SLEAP			500u	//ms
+#define TIMEOUT					10u		//ms
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +52,7 @@ uint8_t rxbuf[BUF_LEN]={0};
 uint8_t txbuf[BUF_LEN]={0};
 uint8_t rxel=0;
 uint8_t txel=0;
-uint16_t Count = TIME_COUNT;
+uint16_t Count = TIME_SLEAP;
 bool RxEnable = false;
 bool TxEnable = false;
 /* USER CODE END PV */
@@ -72,22 +72,37 @@ uint8_t USARTexchange (bool RxEnable, bool TxEnable)
 {
 	if (RxEnable)
 	{		
-		HAL_UART_Receive_IT(&huart3, txbuf, BUF_LEN);
-		txel = BUF_LEN;
+		HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
 		RxEnable = false;
 	}
 	if (TxEnable)
 	{		
 		HAL_UART_Transmit_IT(&huart3, txbuf, txel);
-		txel = 0;
+		txel=0;
 		TxEnable = false;
 	}
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (Count == 0)	Count = TIME_COUNT;
+	if (Count == 0)	Count = TIME_SLEAP;
 	Count--;
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+		/* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
+	
+	if (rxel<BUF_LEN) 
+	{	
+		rxel++;	
+		HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);	
+	}
+  /* NOTE: This function should not be modified, when the callback is needed,
+           the HAL_UART_RxCpltCallback could be implemented in the user file
+   */
 }
 /* USER CODE END 0 */
 
@@ -129,7 +144,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		
+		if( rxel == (BUF_LEN/2) )
+		{
+			for(int i=0; i<(BUF_LEN/2); i++)
+			{
+				txbuf[i] = rxbuf[rxel-1];
+				rxel--;
+				txel++;
+			}
+		}	
     /* USER CODE END WHILE */
 		if ( (Count == 0) && (rxel < BUF_LEN) )
 		{
