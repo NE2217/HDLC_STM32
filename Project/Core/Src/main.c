@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "Protocol.h"
+//#include "Protocol.h"
 #include "stdbool.h"
 /* USER CODE END Includes */
 
@@ -32,8 +32,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUF_LEN					100u
-#define TIME_COUNT			2000u //ms
+#define BUF_LEN					10u
+#define TIME_COUNT			500u //ms
 
 /* USER CODE END PD */
 
@@ -68,20 +68,25 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t USARTenvirement (bool RxEnable, bool TxEnable)
+uint8_t USARTexchange (bool RxEnable, bool TxEnable)
 {
 	if (RxEnable)
 	{		
-		HAL_UART_Receive_IT(&huart3, rxbuf, rxel);
+		HAL_UART_Receive_IT(&huart3, txbuf, BUF_LEN);
+		txel = BUF_LEN;
+		RxEnable = false;
 	}
-		if (TxEnable)
+	if (TxEnable)
 	{		
-		HAL_UART_Transmit_IT(&huart3, rxbuf, BUF_LEN);
+		HAL_UART_Transmit_IT(&huart3, txbuf, txel);
+		txel = 0;
+		TxEnable = false;
 	}
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	if (Count == 0)	Count = TIME_COUNT;
 	Count--;
 }
 /* USER CODE END 0 */
@@ -132,13 +137,13 @@ int main(void)
 		}
 		else RxEnable=false;
 		
-		if (txel > 0)
+		if ( txel > 0 )
 		{
 			TxEnable=true;
 		}
 		else TxEnable=false;
 		
-		USARTenvirement (RxEnable, TxEnable);
+		USARTexchange (RxEnable, TxEnable);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

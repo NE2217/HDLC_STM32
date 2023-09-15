@@ -1,0 +1,6 @@
+--c99 -c --cpu Cortex-M3 -D__EVAL -g -O3 --apcs=interwork --split_sections -I ../Core/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include -I .\HDLC_Protocol
+-I.\RTE\_HDLC_2
+-IC:\Users\niker\AppData\Local\Arm\Packs\ARM\CMSIS\5.7.0\CMSIS\Core\Include
+-IC:\Users\niker\AppData\Local\Arm\Packs\Keil\STM32F1xx_DFP\2.3.0\Device\Include
+-D__UVISION_VERSION="534" -D_RTE_ -DSTM32F10X_MD -D_RTE_ -DUSE_HAL_DRIVER -DSTM32F103xB
+-o hdlc_2\main.o --omf_browse hdlc_2\main.crf --depend hdlc_2\main.d "../Core/Src/main.c"
