@@ -32,9 +32,10 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUF_LEN					6u
-#define TIME_SLEAP			500u	//ms
-#define TIMEOUT					10u		//ms
+#define BUF_LEN						6u
+#define TIME_SLEAP				500u	//ms
+#define TIMEOUT						10u		//ms
+#define READY_TO_TRANSMIT 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -46,12 +47,15 @@
 TIM_HandleTypeDef htim1;
 
 UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t rxbuf[BUF_LEN]={0};
 uint8_t txbuf[BUF_LEN]={0};
 uint8_t rxel=0;
 uint8_t txel=0;
+uint16_t txlen=0;
+uint8_t HDLC_status=0;
 uint16_t Count = TIME_SLEAP;
 bool RxEnable = false;
 bool TxEnable = false;
@@ -60,6 +64,7 @@ bool TxEnable = false;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
@@ -91,16 +96,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-
+	//if(HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1) == 0)
+	//{
+		if (rxel == BUF_LEN-1) rxel=0;
+		else rxel++;
+		HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
+	//}	
 		/* Prevent unused argument(s) compilation warning */
   UNUSED(huart);
-	
-	if (rxel<BUF_LEN) 
-	{	
-		rxel++;	
-		HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);	
-	}
-  /* NOTE: This function should not be modified, when the callback is needed,
+			
+	  /* NOTE: This function should not be modified, when the callback is needed,
            the HAL_UART_RxCpltCallback could be implemented in the user file
    */
 }
@@ -134,39 +139,26 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART3_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 	HAL_TIM_Base_Start_IT(&htim1);
+	HAL_UART_Receive_IT(&huart3, rxbuf, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		if( rxel == (BUF_LEN/2) )
+	
+		if (HDLC_status == READY_TO_TRANSMIT) 
 		{
-			for(int i=0; i<(BUF_LEN/2); i++)
-			{
-				txbuf[i] = rxbuf[rxel-1];
-				rxel--;
-				txel++;
-			}
-		}	
+			HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);
+			HDLC_status = 0;
+		}
     /* USER CODE END WHILE */
-		if ( (Count == 0) && (rxel < BUF_LEN) )
-		{
-			RxEnable=true;
-		}
-		else RxEnable=false;
-		
-		if ( txel > 0 )
-		{
-			TxEnable=true;
-		}
-		else TxEnable=false;
-		
-		USARTexchange (RxEnable, TxEnable);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -287,6 +279,22 @@ static void MX_USART3_UART_Init(void)
   /* USER CODE BEGIN USART3_Init 2 */
 
   /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
 }
 
