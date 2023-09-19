@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 //#include "Protocol.h"
 #include "stdbool.h"
+#include "Protocol.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
