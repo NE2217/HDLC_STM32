@@ -33,10 +33,16 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUF_LEN						6u
-#define TIME_SLEAP				500u	//ms
-#define TIMEOUT						10u		//ms
-#define READY_TO_TRANSMIT 1
+#define BUF_LEN            6u
+#define TIME_SLEAP        500u  //ms
+#define TIMEOUT            10u    //ms
+//#define READY_TO_TRANSMIT 1
+typedef enum
+{
+  NONE,
+  READY_TO_TRANSMIT,
+  WAIT_TO
+} t_status;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,12 +57,12 @@ UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
-uint8_t rxbuf[BUF_LEN]={0};
-uint8_t txbuf[BUF_LEN]={0};
-uint8_t rxel=0;
-uint8_t txel=0;
-uint16_t txlen=0;
-uint8_t HDLC_status=0;
+uint8_t rxbuf[BUF_LEN] = {0};
+uint8_t txbuf[BUF_LEN] = {0};
+uint8_t rxel = 0;
+uint8_t txel = 0;
+uint16_t txlen = 0;
+t_status HDLC_status = NONE;
 uint16_t Count = TIME_SLEAP;
 bool RxEnable = false;
 bool TxEnable = false;
@@ -76,40 +82,56 @@ static void MX_TIM1_Init(void);
 /* USER CODE BEGIN 0 */
 uint8_t USARTexchange (bool RxEnable, bool TxEnable)
 {
-	if (RxEnable)
-	{		
-		HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
-		RxEnable = false;
-	}
-	if (TxEnable)
-	{		
-		HAL_UART_Transmit_IT(&huart3, txbuf, txel);
-		txel=0;
-		TxEnable = false;
-	}
+  if (RxEnable)
+  {
+    HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
+    RxEnable = false;
+  }
+  if (TxEnable)
+  {
+    HAL_UART_Transmit_IT(&huart3, txbuf, txel);
+    txel = 0;
+    TxEnable = false;
+  }
+  return 0;
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (Count == 0)	Count = TIME_SLEAP;
-	Count--;
+  if (Count ==  0)
+    Count = TIME_SLEAP;
+  Count--;
 }
-
+// ----------------------------------------------------------------------------
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	//if(HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1) == 0)
-	//{
-		if (rxel == BUF_LEN-1) rxel=0;
-		else rxel++;
-		HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
-	//}	
-		/* Prevent unused argument(s) compilation warning */
-  UNUSED(huart);
-			
-	  /* NOTE: This function should not be modified, when the callback is needed,
-           the HAL_UART_RxCpltCallback could be implemented in the user file
-   */
+
+  if(huart == &huart3)
+  {
+  
+    if (rxel == (BUF_LEN-1) )
+      rxel = 0;
+    else
+      rxel++;
+
+
+    HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
+
+//    if (++rxel >= BUF_LEN)
+//      rxel = 0;
+
+  }
+
 }
+// ----------------------------------------------------------------------------
+void UartSendData(uint8_t *data, uint16_t len)
+{
+  HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);
+}
+// ----------------------------------------------------------------------------
+
+
+// ----------------------------------------------------------------------------
 /* USER CODE END 0 */
 
 /**
@@ -144,20 +166,40 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-	HAL_TIM_Base_Start_IT(&htim1);
-	HAL_UART_Receive_IT(&huart3, rxbuf, 1);
+  HAL_TIM_Base_Start_IT(&htim1);
+  HAL_UART_Receive_IT(&huart3, rxbuf, 1);
+
+
+  t_InitParams init;
+
+  ProtocolInitParamsStructureReset(&init);
+
+  init.max_cadr_reception_data      = 0;
+  init.max_cadr_transmission_data   = 0;
+  init.max_window_reception_data    = 0;
+  init.max_window_transmission_data = 0;
+  init.server_address               = 0;
+  init.client_address               = 0;
+  init.pasword                      = 0;
+
+  init.uartSendDataCB = UartSendData;
+  init.getTicksCB = HAL_GetTick;
+
+  ProtocolInit(&init);
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	
-		if (HDLC_status == READY_TO_TRANSMIT) 
-		{
-			HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);
-			HDLC_status = 0;
-		}
+    ProtocolMain();
+//    if (HDLC_status ==  READY_TO_TRANSMIT)
+//    {
+//      HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);
+//      HDLC_status = NONE;
+//    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -184,7 +226,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) !=  HAL_OK)
   {
     Error_Handler();
   }
@@ -198,7 +240,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) !=  HAL_OK)
   {
     Error_Handler();
   }
@@ -229,18 +271,18 @@ static void MX_TIM1_Init(void)
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  if (HAL_TIM_Base_Init(&htim1) !=  HAL_OK)
   {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) !=  HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) !=  HAL_OK)
   {
     Error_Handler();
   }
@@ -273,7 +315,7 @@ static void MX_USART3_UART_Init(void)
   huart3.Init.Mode = UART_MODE_TX_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
+  if (HAL_UART_Init(&huart3) !=  HAL_OK)
   {
     Error_Handler();
   }

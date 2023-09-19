@@ -1,67 +1,121 @@
 #include <stdint.h>
+#include <string.h>
+#include "Protocol.h"
 
-void ProtocolMain()
+#define POLLING_TIME    1000u
+#define SEND_BUF_SIZE   100u
+
+typedef enum
 {
-	
-}
-void Init()
+  NONE = 0,
+  SEND_AUTHORIZE,
+  WAIT_AUTHORIZE_ANSWER
+} t_protocol_status;
+
+static t_protocol_status Status;
+
+static uint32_t LocalTime;
+static t_InitParams Parameters;
+
+uint8_t authorize_msg[] = {0,0,0,0,0,0};
+
+
+uint8_t SendBuf[SEND_BUF_SIZE];
+
+// ----------------------------------------------------------------------------
+void ProtocolMain(void)
 {
-	
+  uint32_t time = Parameters.getTicksCB();
+
+  if( (time - LocalTime) < POLLING_TIME )
+    return;
+  LocalTime = Parameters.getTicksCB();
+
+  // что-то делаем
+  // Parameters.uartSendDataCB()
+  switch(Status)
+  {
+    case NONE:
+      Status = SEND_AUTHORIZE;
+      break;
+    case SEND_AUTHORIZE:
+      // отправка сообщения авторизации
+      
+    default:
+      break;
+  }
 }
-void DataReceive(uint8_t* data)
+// ----------------------------------------------------------------------------
+void ProtocolInitParamsStructureReset(t_InitParams *init)
+{
+  memset(init, 0, sizeof(t_InitParams) );
+}
+// ----------------------------------------------------------------------------
+void ProtocolInit(t_InitParams *init)
+{
+  Status = NONE;
+  ProtocolInitParamsStructureReset(&Parameters);
+  memcpy(&Parameters, init, sizeof(t_InitParams));
+  LocalTime = Parameters.getTicksCB();
+  memset(SendBuf, 0, SEND_BUF_SIZE);
+}
+// ----------------------------------------------------------------------------
+void DataReceive(uint8_t* data, uint16_t len)
 {
 
 }
+// ----------------------------------------------------------------------------
 //Показания_____________________
-float GetVoltageA()
+float GetVoltageA(void)
 {
-	return 0;
+  return 0;
 }
-float GetVoltageB()
+// ----------------------------------------------------------------------------
+float GetVoltageB(void)
 {
-	return 0;
+  return 0;
 }
-float GetVoltageC()
+float GetVoltageC(void)
 {
-	return 0;
+  return 0;
 }
-float GetCurrentA()
+float GetCurrentA(void)
 {
-	return 0;
+  return 0;
 }
-float GetCurrentB()
+float GetCurrentB(void)
 {
-	return 0;
+  return 0;
 }
-float GetCurrentC()
+float GetCurrentC(void)
 {
-	return 0;
+  return 0;
 }
-float GetPowerA()
+float GetPowerA(void)
 {
-	return 0;
+  return 0;
 }
-float GetPowerB()
+float GetPowerB(void)
 {
-	return 0;
+  return 0;
 }
-float GetPowerC()
+float GetPowerC(void)
 {
-	return 0;
+  return 0;
 }
-float GetEnergyActiveImport()
+float GetEnergyActiveImport(void)
 {
-	return 0;
+  return 0;
 }
-float GetEnergyActiveExport()
+float GetEnergyActiveExport(void)
 {
-	return 0;
+  return 0;
 }
-float GetEnergyReactiveImport()
+float GetEnergyReactiveImport(void)
 {
-	return 0;
+  return 0;
 }
-float GetEnergyReactiveExport()
+float GetEnergyReactiveExport(void)
 {
-	return 0;
+  return 0;
 }
