@@ -518,7 +518,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>C:\Programing\HDLC_STM32\Project\MDK-ARM\HDLC_Protocol\Protocol.c</PathWithFileName>
+      <PathWithFileName>.\HDLC_Protocol\Protocol.c</PathWithFileName>
       <FilenameWithoutPath>Protocol.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
