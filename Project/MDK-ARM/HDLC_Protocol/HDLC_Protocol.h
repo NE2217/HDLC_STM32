@@ -19,13 +19,11 @@ typedef struct
   uint32_t (*getTicksCB)(void);
 }t_InitParams;
 
+void HDLC_ProtocolMain(void);
 
-void ProtocolMain(void);
-void HDLC_ProtocolMain(uint8_t* sendBuf, uint16_t lenSendBuf, uint8_t* getBuf, uint16_t lenGetBuf);
-
-void ProtocolInitParamsStructureReset(t_InitParams *init);
-void ProtocolInit(t_InitParams *init);
-void DataReceive(uint8_t* data, uint16_t len);
+void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init);
+void HDLC_ProtocolInit(t_InitParams *init);
+void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len);
 
 float GetVoltageA(void);
 float GetVoltageB(void);

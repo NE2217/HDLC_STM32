@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUF_LEN            20u
+#define BUF_LEN           100u
 #define TIME_SLEAP        500u  //ms
 #define TIMEOUT            10u    //ms
 //#define READY_TO_TRANSMIT 1
@@ -47,8 +47,6 @@ typedef enum
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-extern bool HDLC_ready_to_read;
-extern bool HDLC_ready_to_send;
 
 /* USER CODE END PM */
 
@@ -59,15 +57,13 @@ UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
-uint8_t rxbuf[BUF_LEN] = {0};
-uint8_t txbuf[BUF_LEN] = {0};
-uint8_t rxel = 0;
-uint8_t txel = 0;
-uint16_t txlen = 0;
+// TODO глоюальные переменные пишем с большой буквы
+uint8_t Rxbuf[BUF_LEN] = {0};
+uint8_t Txbuf[BUF_LEN] = {0};
+uint8_t Rxel = 0;
+uint8_t Txel = 0;
 t_status HDLC_status = NONE;
-uint16_t Count = TIME_SLEAP;
-bool RxEnable = false;
-bool TxEnable = false;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,48 +78,23 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/*
-uint8_t USARTexchange (bool RxEnable, bool TxEnable)
-{
-  if (RxEnable)
-  {
-    HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
-    RxEnable = false;
-  }
-  if (TxEnable)
-  {
-    HAL_UART_Transmit_IT(&huart3, txbuf, txel);
-    txel = 0;
-    TxEnable = false;
-  }
-  return 0;
-}
-*/
-/*
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  if (Count ==  0)
-    Count = TIME_SLEAP;
-  Count--;
-}
-*/
 // ----------------------------------------------------------------------------
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 
   if(huart == &huart3)
   {
-  
-    if (rxel == (BUF_LEN-1) )
-      rxel = 0;
+
+		HDLC_ProtocolDataReceive(&Rxbuf[Rxel], 1);
+		
+    if (Rxel == (BUF_LEN-1) )
+      Rxel = 0;
     else
-      rxel++;
+      Rxel++;
+    HAL_UART_Receive_IT(&huart3, &Rxbuf[Rxel], 1);
 
-
-    HAL_UART_Receive_IT(&huart3, &rxbuf[rxel], 1);
-
-//    if (++rxel >= BUF_LEN)
-//      rxel = 0;
+//    if (++Rxel >= BUF_LEN)
+//      Rxel = 0;
 
   }
 
@@ -131,11 +102,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 // ----------------------------------------------------------------------------
 void UartSendData(uint8_t *data, uint16_t len)
 {
-	if (HDLC_ready_to_send)
+	// сделать проверку длины данных и размера буфера
+	if(len>BUF_LEN)
 	{
-		HAL_UART_Transmit_DMA(&huart3, data, len);
-		HDLC_ready_to_send = false;
+		return;
 	}
+	memcpy(Txbuf, data, len);
+	HAL_UART_Transmit_DMA(&huart3, Txbuf, len);
+	return;
 }
 // ----------------------------------------------------------------------------
 
@@ -148,7 +122,7 @@ void UartSendData(uint8_t *data, uint16_t len)
   * @retval int
   */
 int main(void)
-a{
+{
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -176,25 +150,25 @@ a{
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim1);
-  HAL_UART_Receive_IT(&huart3, rxbuf, 1);
+  HAL_UART_Receive_IT(&huart3, Rxbuf, 1);
 
 
   t_InitParams init;
 
-  ProtocolInitParamsStructureReset(&init);
-
-  init.max_cadr_reception_data      = 0;
-  init.max_cadr_transmission_data   = 0;
-  init.max_window_reception_data    = 0;
-  init.max_window_transmission_data = 0;
-  init.server_address               = 0;
-  init.client_address               = 0;
-  memcmp(init.pasword, "00000000", sizeof(init.pasword));
+  HDLC_ProtocolInitParamsStructureReset(&init);
+	
+	init.max_cadr_reception_data = 1024;
+  init.max_cadr_transmission_data = 1024;
+  init.max_window_reception_data = 1;
+  init.max_window_transmission_data = 1;
+  init.server_address = 148681;
+  init.client_address = 65;
+	memcpy(init.pasword, "12345678", 8);
 
   init.uartSendDataCB = UartSendData;
   init.getTicksCB = HAL_GetTick;
 
-  ProtocolInit(&init);
+  HDLC_ProtocolInit(&init);
 
 
   /* USER CODE END 2 */
@@ -203,14 +177,8 @@ a{
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		HDLC_ProtocolMain(txbuf,BUF_LEN,rxbuf,BUF_LEN);
-		UartSendData(txbuf, BUF_LEN);
-    //ProtocolMain();
-//    if (HDLC_status ==  READY_TO_TRANSMIT)
-//    {
-//      HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);
-//      HDLC_status = NONE;
-//    }
+		HDLC_ProtocolMain();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

@@ -7,9 +7,11 @@
 #define SEND_BUF_SIZE						100u
 #define GET_BUF_SIZE						100u
 #define SEND_AUTHORIZATION_SIZE	100u
+#define FLAG										0x7E
 
-bool HDLC_ready_to_read = true;
-bool HDLC_ready_to_send = false;
+static uint8_t send_1[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
+0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
+0x00, 0x01, 0x72, 0xE3, 0x7E };
 
 typedef enum
 {
@@ -32,19 +34,11 @@ uint8_t authorize_msg[] = {0,0,0,0,0,0};
 uint8_t HDLC_SendBuf[SEND_BUF_SIZE];
 uint8_t HDLC_GetBuf[GET_BUF_SIZE];
 
+uint16_t GetBufHead;
+bool RecordingInProgress;
+
 // ----------------------------------------------------------------------------
-void DefaultParams(void)
-{
-	Parameters.max_cadr_reception_data = 1024;
-  Parameters.max_cadr_transmission_data = 1024;
-  Parameters.max_window_reception_data = 1;
-  Parameters.max_window_transmission_data = 1;
-  Parameters.server_address = 148681;
-  Parameters.client_address = 65;
-	memcpy(Parameters.pasword, "12345678", 8);
-}
-// ----------------------------------------------------------------------------
-void ProtocolMain(void)
+void HDLC_ProtocolMain(void) 
 {
   uint32_t time = Parameters.getTicksCB();
 
@@ -57,55 +51,27 @@ void ProtocolMain(void)
   switch(Status)
   {
     case NONE:
-      Status = SEND_AUTHORIZATION;
-      break;
-    case SEND_AUTHORIZATION:
-      // отправка сообщения авторизации
-      
-    default:
-      break;
-  }
-}
-void HDLC_ProtocolMain(uint8_t* sendBuf, uint16_t lenSendBuf, uint8_t* getBuf, uint16_t lenGetBuf)
-{
-  uint32_t time = Parameters.getTicksCB();
-
-  if( (time - LocalTime) < POLLING_TIME )
-    return;
-  LocalTime = Parameters.getTicksCB();
-	//memcmp
-  // что-то делаем
-  // Parameters.uartSendDataCB()
-  switch(Status)
-  {
-    case NONE:
-
 			Status = SEND_AUTHORIZATION;
       break;
     case SEND_AUTHORIZATION:
-			memcpy(HDLC_SendBuf, "SEND_AUTHORIZATION", sizeof("SEND_AUTHORIZATION"));
-			memcpy(sendBuf, HDLC_SendBuf, sizeof("SEND_AUTHORIZATION"));
-      HDLC_ready_to_send = true;
-			Status = WAIT_AUTHORIZATION_ANSWER;
+			memcpy(HDLC_SendBuf, send_1, sizeof(send_1));
+			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_1));
+			//Status = WAIT_AUTHORIZATION_ANSWER;
       break;
       // отправка сообщения авторизации
     case WAIT_AUTHORIZATION_ANSWER:
-			memcpy(HDLC_GetBuf, getBuf, lenGetBuf);
-			HDLC_ready_to_read = false;
-			if(HDLC_GetBuf[0] == 'a')
-			{
-				HDLC_ready_to_read = true;
-				Status = SEND_CONFIG_PARAM;
-				memcpy(HDLC_SendBuf, "OK", sizeof("OK"));
-				memcpy(sendBuf, HDLC_SendBuf, sizeof("OK"));
-				HDLC_ready_to_send = true;
-			}
-			else
-			{
-				memcpy(HDLC_SendBuf, "ERROR", sizeof("ERROR"));
-				memcpy(sendBuf, HDLC_SendBuf, sizeof("ERROR"));
-				HDLC_ready_to_send = true;
-			}
+//			memcpy(HDLC_GetBuf, getBuf, lenGetBuf);
+
+//			if(HDLC_GetBuf[0] == 'a')
+//			{
+
+//				Status = SEND_CONFIG_PARAM;
+//				memcpy(HDLC_SendBuf, "OK", sizeof("OK"));
+//			}
+//			else
+//			{
+//				memcpy(HDLC_SendBuf, "ERROR", sizeof("ERROR"));
+//			}
 			
       break;
       // отправка сообщения авторизации  
@@ -114,28 +80,44 @@ void HDLC_ProtocolMain(uint8_t* sendBuf, uint16_t lenSendBuf, uint8_t* getBuf, u
   }
 }
 // ----------------------------------------------------------------------------
-void ProtocolInitParamsStructureReset(t_InitParams *init)
+void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init)
 {	
   memset(init, 0, sizeof(t_InitParams) );
+	GetBufHead = 0;
 }
 // ----------------------------------------------------------------------------
-void ProtocolInit(t_InitParams *init)
+void HDLC_ProtocolInit(t_InitParams *init)
 {
   Status = NONE;
-  ProtocolInitParamsStructureReset(&Parameters);
+  HDLC_ProtocolInitParamsStructureReset(&Parameters);
   memcpy(&Parameters, init, sizeof(t_InitParams));
   LocalTime = Parameters.getTicksCB();
   memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
 }
 // ----------------------------------------------------------------------------
-void ProtocolPackAuthorization(uint8_t pasword)
+void HDLC_ProtocolPackAuthorization(uint8_t pasword)
 {
 	memcmp(HDLC_SendBuf, authorize_msg, sizeof(authorize_msg));
 }
 // ----------------------------------------------------------------------------
-void DataReceive(uint8_t* data, uint16_t len)
+void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
 {
-
+	for(int i = 0; i < len; ++i)
+	{
+		if(data[i] == FLAG)
+		{
+			RecordingInProgress = true;
+		}
+		if (RecordingInProgress == true)
+		{
+			HDLC_GetBuf[ GetBufHead ] = data[i];
+			GetBufHead++;
+			if(data[i] == FLAG)
+			{
+				RecordingInProgress = false;
+			}
+		}
+	}
 }
 // ----------------------------------------------------------------------------
 //Показания_____________________
