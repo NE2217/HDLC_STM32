@@ -23,7 +23,7 @@
 /* USER CODE BEGIN Includes */
 //#include "Protocol.h"
 #include "stdbool.h"
-#include "Protocol.h"
+#include "HDLC_Protocol.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,7 +33,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define BUF_LEN            6u
+#define BUF_LEN            20u
 #define TIME_SLEAP        500u  //ms
 #define TIMEOUT            10u    //ms
 //#define READY_TO_TRANSMIT 1
@@ -47,6 +47,8 @@ typedef enum
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+extern bool HDLC_ready_to_read;
+extern bool HDLC_ready_to_send;
 
 /* USER CODE END PM */
 
@@ -80,6 +82,7 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/*
 uint8_t USARTexchange (bool RxEnable, bool TxEnable)
 {
   if (RxEnable)
@@ -95,13 +98,15 @@ uint8_t USARTexchange (bool RxEnable, bool TxEnable)
   }
   return 0;
 }
-
+*/
+/*
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   if (Count ==  0)
     Count = TIME_SLEAP;
   Count--;
 }
+*/
 // ----------------------------------------------------------------------------
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -126,7 +131,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 // ----------------------------------------------------------------------------
 void UartSendData(uint8_t *data, uint16_t len)
 {
-  HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);
+	if (HDLC_ready_to_send)
+	{
+		HAL_UART_Transmit_DMA(&huart3, data, len);
+		HDLC_ready_to_send = false;
+	}
 }
 // ----------------------------------------------------------------------------
 
@@ -139,7 +148,7 @@ void UartSendData(uint8_t *data, uint16_t len)
   * @retval int
   */
 int main(void)
-{
+a{
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -180,7 +189,7 @@ int main(void)
   init.max_window_transmission_data = 0;
   init.server_address               = 0;
   init.client_address               = 0;
-  init.pasword                      = 0;
+  memcmp(init.pasword, "00000000", sizeof(init.pasword));
 
   init.uartSendDataCB = UartSendData;
   init.getTicksCB = HAL_GetTick;
@@ -194,7 +203,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    ProtocolMain();
+		HDLC_ProtocolMain(txbuf,BUF_LEN,rxbuf,BUF_LEN);
+		UartSendData(txbuf, BUF_LEN);
+    //ProtocolMain();
 //    if (HDLC_status ==  READY_TO_TRANSMIT)
 //    {
 //      HAL_UART_Transmit_DMA(&huart3, txbuf, txlen);

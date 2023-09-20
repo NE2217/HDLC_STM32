@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
-bool HDLC_reade_to_read;
-bool HDLC_reade_to_send;
+#include <string.h>
 
 typedef struct
 {
@@ -15,7 +13,7 @@ typedef struct
   uint32_t max_window_transmission_data;
   uint32_t server_address;
   uint32_t client_address;
-  uint64_t pasword;
+  uint8_t pasword[8];
   
   void (*uartSendDataCB)(uint8_t *data, uint16_t len);
   uint32_t (*getTicksCB)(void);
@@ -23,6 +21,8 @@ typedef struct
 
 
 void ProtocolMain(void);
+void HDLC_ProtocolMain(uint8_t* sendBuf, uint16_t lenSendBuf, uint8_t* getBuf, uint16_t lenGetBuf);
+
 void ProtocolInitParamsStructureReset(t_InitParams *init);
 void ProtocolInit(t_InitParams *init);
 void DataReceive(uint8_t* data, uint16_t len);

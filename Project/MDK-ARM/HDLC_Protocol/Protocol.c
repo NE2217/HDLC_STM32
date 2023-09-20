@@ -4,6 +4,7 @@
 
 #define POLLING_TIME    1000u
 #define SEND_BUF_SIZE   100u
+#define GET_BUF_SIZE		100u
 
 typedef enum
 {
@@ -21,6 +22,7 @@ uint8_t authorize_msg[] = {0,0,0,0,0,0};
 
 
 uint8_t SendBuf[SEND_BUF_SIZE];
+uint8_t GetBuf[GET_BUF_SIZE];
 
 // ----------------------------------------------------------------------------
 void ProtocolMain(void)
