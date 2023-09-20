@@ -1,7 +1,20 @@
 #include <stdint.h>
-
-//enum 
-
+/*
+typedef enum 
+{
+	SEND_1 = 0,
+	GET_1,
+	SEND_2,
+	GET_2,
+	SEND_3,
+	GET_3,
+	SEND_4,
+	GET_4,
+	SEND_5,
+	GET_5,
+}t_HDLC_Autorization_status;
+t_HDLC_Autorization_status Autorization_status;
+*/
 static uint8_t send_1[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
 0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
 0x00, 0x01, 0x72, 0xE3, 0x7E };
@@ -42,3 +55,44 @@ static uint8_t send_5[] = { 0x7E, 0xA0, 0x0A, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x53
 static uint8_t get_5[] = { 0x7E, 0xA0, 0x21, 0x41, 0x00, 0x02, 0x44, 0xC9, 0x73, 0x02, 0x04, 0x81, 0x80, 0x12, 0x05, 0x01,
 0x80, 0x06, 0x01, 0x80, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00, 0x00, 0x01, 0x53, 0x3B, 0x7E };
 
+/*
+void HDLC_Autorization()
+{
+	switch (Autorization_status)
+	{	
+		case SEND_1:
+			memcpy(HDLC_SendBuf, send_1, sizeof(send_1));
+			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_1));
+			Status = GET_1;
+			break;
+		case GET_1:
+		if(memcmp(get_1, HDLC_GetBuf, sizeof(get_1)) == 0)
+		{
+			HDLC_GetBuf = {0}
+			GetCorrect = true;
+			//Status = SEND_CONFIG_PARAM;
+		}
+		default:
+			break;
+	}
+}
+
+ switch(Status)
+  {
+    case NONE:
+			Status = SEND_AUTHORIZATION;
+      break;
+    case SEND_AUTHORIZATION:
+			memcpy(HDLC_SendBuf, send_1, sizeof(send_1));
+			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_1));
+			Status = WAIT_AUTHORIZATION_ANSWER;
+      break;
+      // отправка сообщения авторизации
+    case WAIT_AUTHORIZATION_ANSWER:
+			memcmp(get_1, HDLC_GetBuf, sizeof(get_1));
+		if(memcmp(get_1, HDLC_GetBuf, sizeof(get_1)) == 0)
+		{
+			GetCorrect = true;
+			//Status = SEND_CONFIG_PARAM;
+		}
+*/
