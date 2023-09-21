@@ -12,10 +12,11 @@
 typedef enum
 {
   NONE = 0,
-  SEND_AUTHORIZATION,
-  WAIT_AUTHORIZATION_ANSWER,
+	FIRST_AUTHORIZATION,
   SEND_CONFIG_PARAM,
 	WAIT_CONFIG_PARAM_ANSWER,
+	SEND_AUTHORIZATION,
+  WAIT_AUTHORIZATION_ANSWER,
   SEND_COMAND,
 	WAIT_COMAND_ANSWER
 } t_protocol_status;
@@ -25,6 +26,7 @@ bool GetCorrect = false;
 static uint32_t LocalTime;
 static t_InitParams Parameters;
 //--------------------------------------------------------------------------------
+
 static uint8_t send_1[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
 0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
 0x00, 0x01, 0x72, 0xE3, 0x7E };
@@ -65,6 +67,22 @@ static uint8_t send_5[] = { 0x7E, 0xA0, 0x0A, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x53
 static uint8_t get_5[] = { 0x7E, 0xA0, 0x21, 0x41, 0x00, 0x02, 0x44, 0xC9, 0x73, 0x02, 0x04, 0x81, 0x80, 0x12, 0x05, 0x01,
 0x80, 0x06, 0x01, 0x80, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00, 0x00, 0x01, 0x53, 0x3B, 0x7E };
 //--------------------------------------------------------------------------------
+typedef struct
+{
+	uint8_t *point;
+	uint16_t size;
+}t_PointSize;	
+t_PointSize FirstAutorizationSendPacks[] = {	send_1, sizeof(send_1),
+																							send_2, sizeof(send_2),
+																							send_3, sizeof(send_3),
+																							send_4, sizeof(send_4),
+																							send_5, sizeof(send_5), };
+t_PointSize FirstAutorizationGetPacks[] = {	get_1, sizeof(get_1),
+																							get_2, sizeof(get_2),
+																							get_3, sizeof(get_3),
+																							get_4, sizeof(get_4),
+																							get_5, sizeof(get_5), };
+//--------------------------------------------------------------------------------
 
 uint8_t authorize_msg[] = {0,0,0,0,0,0};
 
@@ -87,31 +105,29 @@ void HDLC_ProtocolMain(void)
 	//memcmp
   // что-то делаем
   // Parameters.uartSendDataCB()
-/*	
+	
   switch(Status)
   {
     case NONE:
-			Status = SEND_AUTHORIZATION;
+			Status = FIRST_AUTHORIZATION;
       break;
-    case SEND_AUTHORIZATION:
+    case SEND_CONFIG_PARAM:
 			memcpy(HDLC_SendBuf, send_1, sizeof(send_1));
 			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_1));
-			Status = WAIT_AUTHORIZATION_ANSWER;
+			Status = WAIT_CONFIG_PARAM_ANSWER;
       break;
       // отправка сообщения авторизации
-    case WAIT_AUTHORIZATION_ANSWER:
+    case WAIT_CONFIG_PARAM_ANSWER:
 		if(memcmp(get_1, HDLC_GetBuf, sizeof(get_1)) == 0)
 		{
 			GetCorrect = true;
 			//Status = SEND_CONFIG_PARAM;
-		}
-		
+		}		
       break;
       // отправка сообщения авторизации  
     default:
       break;			
   }
-*/
 }
 // ----------------------------------------------------------------------------
 void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init)
@@ -227,72 +243,83 @@ typedef enum
 }t_HDLC_Autorization_status;
 t_HDLC_Autorization_status Autorization_status;
 
+void HDLC_SendFirstAutorization(uint8_t num)
+{
+	memcpy(HDLC_SendBuf, FirstAutorizationSendPacks[num].point, FirstAutorizationSendPacks[num].size);
+	Parameters.uartSendDataCB(HDLC_SendBuf, FirstAutorizationSendPacks[num].size);
+}
+
+bool HDLC_GetFirstAutorization(uint8_t num)
+{
+	if(memcmp(FirstAutorizationGetPacks[num].point, HDLC_GetBuf, FirstAutorizationGetPacks[num].size) == 0)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 void HDLC_FirstAutorization(void) 
 {
   switch(Autorization_status)
   {
     case SEND_1:
-			memcpy(HDLC_SendBuf, send_1, sizeof(send_1));
-			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_1));
+			HDLC_SendFirstAutorization(0);
 			Autorization_status = GET_1;
       break;
       // отправка сообщения авторизации
     case GET_1:
-		if(memcmp(get_1, HDLC_GetBuf, sizeof(get_1)) == 0)
+		if( HDLC_GetFirstAutorization(0) )
 		{
 			Autorization_status = SEND_2;
 			GetBufHead = 0;
 		}
 		break;
 		case SEND_2:
-			memcpy(HDLC_SendBuf, send_2, sizeof(send_2));
-			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_2));
+				HDLC_SendFirstAutorization(1);
 			Autorization_status = GET_2;
       break;
       // отправка сообщения авторизации
     case GET_2:
-		if(memcmp(get_2, HDLC_GetBuf, sizeof(get_2)) == 0)
+		if(	HDLC_GetFirstAutorization(1) )
 		{
 			Autorization_status = SEND_3;
 			GetBufHead = 0;
 		}
 		break;
 		case SEND_3:
-			memcpy(HDLC_SendBuf, send_3, sizeof(send_3));
-			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_3));
-			Autorization_status = GET_3;
+				HDLC_SendFirstAutorization(2);
+		Autorization_status = GET_3;
       break;
       // отправка сообщения авторизации
     case GET_3:
-		if(memcmp(get_3, HDLC_GetBuf, sizeof(get_3)) == 0)
+		if( HDLC_GetFirstAutorization(2) )
 		{
 			Autorization_status = SEND_4;
 			GetBufHead = 0;
 		}
 		break;
 		case SEND_4:
-			memcpy(HDLC_SendBuf, send_4, sizeof(send_4));
-			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_4));
-			Autorization_status = GET_4;
+			HDLC_SendFirstAutorization(3);
+		Autorization_status = GET_4;
       break;
       // отправка сообщения авторизации
     case GET_4:
-		if(memcmp(get_4, HDLC_GetBuf, sizeof(get_4)) == 0)
-		{
+		if( HDLC_GetFirstAutorization(3) )
+			{
 			Autorization_status = SEND_5;
 			GetBufHead = 0;
 		}
 		break;
 		case SEND_5:
-			memcpy(HDLC_SendBuf, send_5, sizeof(send_5));
-			Parameters.uartSendDataCB(HDLC_SendBuf, sizeof(send_5));
+			HDLC_SendFirstAutorization(4);
 			Autorization_status = GET_5;
       break;
       // отправка сообщения авторизации
     case GET_5:
-		if(memcmp(get_5, HDLC_GetBuf, sizeof(get_5)) == 0)
+		if	(HDLC_GetFirstAutorization(4))
 		{
 			GetCorrect = true;
+			Status = SEND_AUTHORIZATION;
 			GetBufHead = 0;
 		}
 		break;
