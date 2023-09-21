@@ -1,0 +1,26 @@
+--cpu Cortex-M3
+".\startup_stm32f103xb.o"
+".\main.o"
+".\stm32f1xx_it.o"
+".\stm32f1xx_hal_msp.o"
+".\stm32f1xx_hal_gpio_ex.o"
+".\stm32f1xx_hal_tim.o"
+".\stm32f1xx_hal_tim_ex.o"
+".\stm32f1xx_hal.o"
+".\stm32f1xx_hal_rcc.o"
+".\stm32f1xx_hal_rcc_ex.o"
+".\stm32f1xx_hal_gpio.o"
+".\stm32f1xx_hal_dma.o"
+".\stm32f1xx_hal_cortex.o"
+".\stm32f1xx_hal_pwr.o"
+".\stm32f1xx_hal_flash.o"
+".\stm32f1xx_hal_flash_ex.o"
+".\stm32f1xx_hal_exti.o"
+".\stm32f1xx_hal_uart.o"
+".\system_stm32f1xx.o"
+".\hdlc_protocol.o"
+".\hdlc_autorization.o"
+--strict --scatter ".\HDLC.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "HDLC.map" -o .\HDLC.axf
