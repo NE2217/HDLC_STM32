@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xB</Define>
               <Undefine></Undefine>
-              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;./HDLC_Protocol</IncludePath>
+              <IncludePath>../Core/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc;../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;../Drivers/CMSIS/Device/ST/STM32F1xx/Include;../Drivers/CMSIS/Include;./HDLC_Protocol;./CRC</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -499,19 +499,64 @@
           <GroupName>HDLC_Protocol</GroupName>
           <Files>
             <File>
-              <FileName>HDLC_Protocol.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\HDLC_Protocol\HDLC_Protocol.h</FilePath>
-            </File>
-            <File>
               <FileName>HDLC_Protocol.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\HDLC_Protocol\HDLC_Protocol.c</FilePath>
             </File>
             <File>
+              <FileName>HDLC_Protocol.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\HDLC_Protocol\HDLC_Protocol.h</FilePath>
+            </File>
+            <File>
               <FileName>HDLC_Autorization.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\HDLC_Autorization.c</FilePath>
+            </File>
+            <File>
+              <FileName>MAC_Pack.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\MAC_Pack.c</FilePath>
+            </File>
+            <File>
+              <FileName>MAC_Pack.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\MAC_Pack.h</FilePath>
+            </File>
+            <File>
+              <FileName>HDLC_pack.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HDLC_pack.c</FilePath>
+            </File>
+            <File>
+              <FileName>HDLC_unpack.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\HDLC_unpack.c</FilePath>
+            </File>
+            <File>
+              <FileName>HDLC_pack.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\HDLC_pack.h</FilePath>
+            </File>
+            <File>
+              <FileName>HDLC_unpack.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\HDLC_unpack.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>CRC</GroupName>
+          <Files>
+            <File>
+              <FileName>CRC.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\CRC\CRC.c</FilePath>
+            </File>
+            <File>
+              <FileName>CRC.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\CRC\CRC.h</FilePath>
             </File>
           </Files>
         </Group>

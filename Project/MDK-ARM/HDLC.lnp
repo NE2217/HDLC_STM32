@@ -20,6 +20,10 @@
 ".\system_stm32f1xx.o"
 ".\hdlc_protocol.o"
 ".\hdlc_autorization.o"
+".\mac_pack.o"
+".\hdlc_pack.o"
+".\hdlc_unpack.o"
+".\crc_1.o"
 --strict --scatter ".\HDLC.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

@@ -64,10 +64,6 @@ uint8_t Rxel = 0;
 uint8_t Txel = 0;
 t_status HDLC_status = NONE;
 
-uint8_t A[5], B[7];
-uint8_t* C[] = {A, B};
-int S = 0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -128,7 +124,7 @@ void UartSendData(uint8_t *data, uint16_t len)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	S = sizeof(C[0]);
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
