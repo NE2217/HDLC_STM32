@@ -1,3 +1,4 @@
+/*
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -5,27 +6,16 @@
 #include "HDLC_unpack.h"
 #include "HDLC_pack.h"
 
-#define POLLING_TIME            1000u
+#define POLLING_TIME           	 1000u
 #define SEND_BUF_SIZE            100u
-#define GET_BUF_SIZE            100u
+#define GET_BUF_SIZE           	 100u
 #define SEND_AUTHORIZATION_SIZE  100u
-#define FLAG                    0x7E
-
-typedef enum
-{
-  NONE = 0,
-  FIRST_AUTHORIZATION,
-  SEND_CONFIG_PARAM,
-  WAIT_CONFIG_PARAM_ANSWER,
-  SEND_AUTHORIZATION,
-  WAIT_AUTHORIZATION_ANSWER,
-  SEND_COMAND,
-  WAIT_COMAND_ANSWER
-} t_protocol_status;
+#define FLAG                 	   0x7E
 
 typedef enum 
 {
-  SEND_1 = 0,
+	NONE_AUTHORIZATION = 0,
+  SEND_1,
   GET_1,
   SEND_2,
   GET_2,
@@ -45,12 +35,7 @@ typedef struct
 } t_PointAndSize;
 
 bool GetCorrect = false;
-float Volt = 1;
-uint32_t LocalTime;
-
-t_protocol_status Status;
 t_HDLC_Autorization_status Autorization_status;
-t_InitParams Parameters;
 //--------------------------------------------------------------------------------
 
 uint8_t send_1[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
@@ -106,172 +91,7 @@ t_PointAndSize ConnectAutorizationGetPacks[] = {  get_1, sizeof(get_1),
                                                   get_4, sizeof(get_4),
                                                   get_5, sizeof(get_5), };
 //--------------------------------------------------------------------------------
-
-uint8_t authorize_msg[] = {0,0,0,0,0,0};
-
-uint8_t HDLC_SendBuf[SEND_BUF_SIZE];
-uint8_t HDLC_GetBuf[GET_BUF_SIZE];
-
-uint16_t GetBufHead;
 bool RecordingInProgress;
-
-void HDLC_ConnectAutorization(void); 
-// ----------------------------------------------------------------------------
-void HDLC_ProtocolMain(void) 
-{
-  uint32_t time = Parameters.getTicksCB();
-
-  if( (time - LocalTime) < POLLING_TIME )
-    return;
-  LocalTime = Parameters.getTicksCB();
-  //memcmp
-  // что-то делаем
-  // Parameters.uartSendDataCB()
-  
-  switch(Status)
-  {
-    case NONE:
-      Status = FIRST_AUTHORIZATION;
-      break;
-    case FIRST_AUTHORIZATION:
-      HDLC_ConnectAutorization();
-		if (Autorization_status == AUTHORIZATION_COMPLETED)
-		{
-			Status = SEND_CONFIG_PARAM;
-		}
-		break;
-    case SEND_CONFIG_PARAM:
-      HDLC_PackSendConfigParam(Parameters.uartSendDataCB);
-			Status = WAIT_CONFIG_PARAM_ANSWER;  
-		break;
-    case WAIT_CONFIG_PARAM_ANSWER:
-    if(HDLC_UnpackWaitConfigParam(HDLC_GetBuf, GET_BUF_SIZE) == 0)
-    {
-      Status = SEND_AUTHORIZATION;
-			GetBufHead = 0;
-    }    
-      break;
-		case SEND_AUTHORIZATION:
-      HDLC_PackSendAuthorization(Parameters.uartSendDataCB);
-			Status = WAIT_AUTHORIZATION_ANSWER;  
-		break;
-    case WAIT_AUTHORIZATION_ANSWER:
-    if(HDLC_UnpackWaitAuthorization(HDLC_GetBuf, GET_BUF_SIZE) == 0)
-    {
-      Status = SEND_COMAND;
-			GetBufHead = 0;
-    }    
-      break;
-		case SEND_COMAND:
-     HDLC_PackSendComand(Parameters.uartSendDataCB);
-			Status =  WAIT_COMAND_ANSWER;  
-		break;
-    case WAIT_COMAND_ANSWER:
-		HDLC_UnpackWaitComand(&Volt, HDLC_GetBuf, GET_BUF_SIZE);
-      break;
-    default:
-      break;      
-  }
-}
-// ----------------------------------------------------------------------------
-void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init)
-{  
-  memset(init, 0, sizeof(t_InitParams) );
-  GetBufHead = 0;
-}
-// ----------------------------------------------------------------------------
-void HDLC_ProtocolInit(t_InitParams *init)
-{
-  Status = NONE;
-  HDLC_ProtocolInitParamsStructureReset(&Parameters);
-  memcpy(&Parameters, init, sizeof(t_InitParams));
-  LocalTime = Parameters.getTicksCB();
-  memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
-  Autorization_status = SEND_1;
-}
-// ----------------------------------------------------------------------------
-void HDLC_ProtocolPackAuthorization(uint8_t pasword)
-{
-  memcmp(HDLC_SendBuf, authorize_msg, sizeof(authorize_msg));
-}
-// ----------------------------------------------------------------------------
-void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
-{
-  for(int i = 0; i < len; ++i)
-  {
-    if( (data[i] == FLAG) && !RecordingInProgress)
-    {
-      RecordingInProgress = true;
-    }
-    else if ( (data[i] == FLAG) && RecordingInProgress)
-    {
-      HDLC_GetBuf[ GetBufHead ] = data[i];
-      GetBufHead++;
-      RecordingInProgress = false;
-    }
-    
-    if (RecordingInProgress == true)
-    {
-      HDLC_GetBuf[ GetBufHead ] = data[i];
-      GetBufHead++;
-    }
-  }
-}
-// ----------------------------------------------------------------------------
-//Показания_____________________
-float GetVoltageA(void)
-{
-  return 0;
-}
-// ----------------------------------------------------------------------------
-float GetVoltageB(void)
-{
-  return 0;
-}
-float GetVoltageC(void)
-{
-  return 0;
-}
-float GetCurrentA(void)
-{
-  return 0;
-}
-float GetCurrentB(void)
-{
-  return 0;
-}
-float GetCurrentC(void)
-{
-  return 0;
-}
-float GetPowerA(void)
-{
-  return 0;
-}
-float GetPowerB(void)
-{
-  return 0;
-}
-float GetPowerC(void)
-{
-  return 0;
-}
-float GetEnergyActiveImport(void)
-{
-  return 0;
-}
-float GetEnergyActiveExport(void)
-{
-  return 0;
-}
-float GetEnergyReactiveImport(void)
-{
-  return 0;
-}
-float GetEnergyReactiveExport(void)
-{
-  return 0;
-}
 //--------------------------------------------------------------------------------
 void HDLC_SendConnectAutorization(uint8_t num)
 {
@@ -351,7 +171,7 @@ void HDLC_ConnectAutorization(void)
       if(HDLC_GetConnectAutorization(4))
       {
         GetCorrect = true;
-        Autorization_status = AUTHORIZATION_COMPLETED;
+        Status = SEND_AUTHORIZATION;
         GetBufHead = 0;
       }
       break;
@@ -359,3 +179,4 @@ void HDLC_ConnectAutorization(void)
       break;
   }
 }
+*/

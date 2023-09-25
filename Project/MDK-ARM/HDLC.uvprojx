@@ -16,7 +16,7 @@
         <TargetCommonOption>
           <Device>STM32F103C8</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F1xx_DFP.2.4.0</PackID>
+          <PackID>Keil.STM32F1xx_DFP.2.3.0</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IRAM(0x20000000-0x20004FFF) IROM(0x8000000-0x800FFFF) CLOCK(8000000) CPUTYPE("Cortex-M3") TZ</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -511,37 +511,42 @@
             <File>
               <FileName>HDLC_Autorization.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\HDLC_Autorization.c</FilePath>
+              <FilePath>.\HDLC_protocol\HDLC_Autorization.c</FilePath>
             </File>
             <File>
               <FileName>MAC_Pack.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\MAC_Pack.c</FilePath>
+              <FilePath>.\HDLC_protocol\MAC_Pack.c</FilePath>
             </File>
             <File>
               <FileName>MAC_Pack.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\MAC_Pack.h</FilePath>
+              <FilePath>.\HDLC_protocol\MAC_Pack.h</FilePath>
             </File>
             <File>
               <FileName>HDLC_pack.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\HDLC_pack.c</FilePath>
+              <FilePath>.\HDLC_protocol\HDLC_pack.c</FilePath>
             </File>
             <File>
               <FileName>HDLC_unpack.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\HDLC_unpack.c</FilePath>
+              <FilePath>.\HDLC_protocol\HDLC_unpack.c</FilePath>
             </File>
             <File>
               <FileName>HDLC_pack.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\HDLC_pack.h</FilePath>
+              <FilePath>.\HDLC_protocol\HDLC_pack.h</FilePath>
             </File>
             <File>
               <FileName>HDLC_unpack.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\HDLC_unpack.h</FilePath>
+              <FilePath>.\HDLC_protocol\HDLC_unpack.h</FilePath>
+            </File>
+            <File>
+              <FileName>Autorization.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\HDLC_Protocol\Autorization.h</FilePath>
             </File>
           </Files>
         </Group>
