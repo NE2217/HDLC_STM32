@@ -85,8 +85,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   if(huart == &huart3)
   {
 
-		HDLC_ProtocolDataReceive(&Rxbuf[Rxel], 1);
-		
+    HDLC_ProtocolDataReceive(&Rxbuf[Rxel], 1);
+
     if (Rxel == (BUF_LEN-1) )
       Rxel = 0;
     else
@@ -102,14 +102,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 // ----------------------------------------------------------------------------
 void UartSendData(uint8_t *data, uint16_t len)
 {
-	// сделать проверку длины данных и размера буфера
-	if(len>BUF_LEN)
-	{
-		return;
-	}
-	memcpy(Txbuf, data, len);
-	HAL_UART_Transmit_DMA(&huart3, Txbuf, len);
-	return;
+  // сделать проверку длины данных и размера буфера
+  if(len > BUF_LEN)
+  {
+    return;
+  }
+  memcpy(Txbuf, data, len);
+  HAL_UART_Transmit_DMA(&huart3, Txbuf, len);
+  return;
 }
 // ----------------------------------------------------------------------------
 
@@ -124,7 +124,7 @@ void UartSendData(uint8_t *data, uint16_t len)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	
+  
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -156,14 +156,14 @@ int main(void)
   t_InitParams init;
 
   HDLC_ProtocolInitParamsStructureReset(&init);
-	
-	init.max_cadr_reception_data = 1024;
+  
+  init.max_cadr_reception_data = 1024;
   init.max_cadr_transmission_data = 1024;
   init.max_window_reception_data = 1;
   init.max_window_transmission_data = 1;
-  init.server_address = 148681;
-  init.client_address = 65;
-	memcpy(init.pasword, "12345678", 8);
+  init.server_address = DEFAULT_SERVER_ADDRESS;
+  init.client_address = DEFAULT_CLIENT_ADDRESS;
+  memcpy(init.pasword, DEFAULT_PASWORD, 8);
 
   init.uartSendDataCB = UartSendData;
   init.getTicksCB = HAL_GetTick;
@@ -177,7 +177,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		HDLC_ProtocolMain();
+    HDLC_ProtocolMain();
 
     /* USER CODE END WHILE */
 

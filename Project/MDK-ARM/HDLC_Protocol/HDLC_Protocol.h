@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define DEFAULT_SERVER_ADDRESS    0x244C9
+#define DEFAULT_CLIENT_ADDRESS    0x41
+#define DEFAULT_PASWORD           "12345678"
+
 typedef struct
 {
   uint32_t max_cadr_reception_data;

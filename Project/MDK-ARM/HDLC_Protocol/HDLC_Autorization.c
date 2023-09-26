@@ -6,15 +6,15 @@
 #include "HDLC_unpack.h"
 #include "HDLC_pack.h"
 
-#define POLLING_TIME           	 1000u
+#define POLLING_TIME              1000u
 #define SEND_BUF_SIZE            100u
-#define GET_BUF_SIZE           	 100u
+#define GET_BUF_SIZE              100u
 #define SEND_AUTHORIZATION_SIZE  100u
-#define FLAG                 	   0x7E
+#define FLAG                      0x7E
 
 typedef enum 
 {
-	NONE_AUTHORIZATION = 0,
+  NONE_AUTHORIZATION = 0,
   SEND_1,
   GET_1,
   SEND_2,
@@ -25,7 +25,7 @@ typedef enum
   GET_4,
   SEND_5,
   GET_5,
-	AUTHORIZATION_COMPLETED
+  AUTHORIZATION_COMPLETED
 } t_HDLC_Autorization_status;
 
 typedef struct

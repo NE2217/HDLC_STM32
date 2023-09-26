@@ -1,5 +1,5 @@
 #ifndef _HDLC_PACK_
-#define	_HDLC_PACK_
+#define  _HDLC_PACK_
 #include <stdlib.h>
 #include <stdint.h>
 

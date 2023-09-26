@@ -35,7 +35,7 @@ typedef enum
   GET_4,
   SEND_5,
   GET_5,
-	AUTHORIZATION_COMPLETED
+  AUTHORIZATION_COMPLETED
 } t_HDLC_Autorization_status;
 
 typedef struct
@@ -115,7 +115,29 @@ uint8_t HDLC_GetBuf[GET_BUF_SIZE];
 uint16_t GetBufHead;
 bool RecordingInProgress;
 
-void HDLC_ConnectAutorization(void); 
+void HDLC_ConnectAutorization(void);
+
+void TimeOutReset(void);
+bool IsTimeOut(void);
+
+bool HDLC_SendData(uint8_t *data, uint16_t len); 
+uint32_t GetTicks(void);
+
+bool HDLC_SendData(uint8_t *data, uint16_t len)
+{
+  if(Parameters.uartSendDataCB == NULL)
+    return false;
+
+// Parameters.uartSendDataCB()
+// сброс таймаута
+}
+
+uint32_t GetTicks(void)
+{
+  if(Parameters.getTicksCB == NULL)
+    return 0;
+  return Parameters.getTicksCB();
+}
 // ----------------------------------------------------------------------------
 void HDLC_ProtocolMain(void) 
 {
@@ -127,55 +149,61 @@ void HDLC_ProtocolMain(void)
   //memcmp
   // что-то делаем
   // Parameters.uartSendDataCB()
-  
+
+  // проверка таймаута if(IsTimeOut()) Status = NONE
+  // TODO проверяем флаг принятых данных и отправляем на проверку дяльше
+
   switch(Status)
   {
     case NONE:
+      Autorization_status = SEND_1;
       Status = FIRST_AUTHORIZATION;
       break;
     case FIRST_AUTHORIZATION:
-      HDLC_ConnectAutorization();
-		if (Autorization_status == AUTHORIZATION_COMPLETED)
-		{
-			Status = SEND_CONFIG_PARAM;
-		}
-		break;
+      HDLC_ConnectAutorization(); // (HDLC_GetBuf, len_data)
+      if(Autorization_status == AUTHORIZATION_COMPLETED)
+      {
+        Status = SEND_CONFIG_PARAM;
+      }
+      break;
     case SEND_CONFIG_PARAM:
       HDLC_PackSendConfigParam(Parameters.uartSendDataCB);
-			Status = WAIT_CONFIG_PARAM_ANSWER;  
-		break;
+      Status = WAIT_CONFIG_PARAM_ANSWER;
+      break;
     case WAIT_CONFIG_PARAM_ANSWER:
-    if(HDLC_UnpackWaitConfigParam(HDLC_GetBuf, GET_BUF_SIZE) == 0)
-    {
-      Status = SEND_AUTHORIZATION;
-			GetBufHead = 0;
-    }    
+      if(HDLC_UnpackWaitConfigParam(HDLC_GetBuf, GET_BUF_SIZE) == 0)
+      {
+        Status = SEND_AUTHORIZATION;
+        GetBufHead = 0;
+      }
       break;
-		case SEND_AUTHORIZATION:
+    case SEND_AUTHORIZATION:
       HDLC_PackSendAuthorization(Parameters.uartSendDataCB);
-			Status = WAIT_AUTHORIZATION_ANSWER;  
-		break;
-    case WAIT_AUTHORIZATION_ANSWER:
-    if(HDLC_UnpackWaitAuthorization(HDLC_GetBuf, GET_BUF_SIZE) == 0)
-    {
-      Status = SEND_COMAND;
-			GetBufHead = 0;
-    }    
+      Status = WAIT_AUTHORIZATION_ANSWER;
       break;
-		case SEND_COMAND:
-     HDLC_PackSendComand(Parameters.uartSendDataCB);
-			Status =  WAIT_COMAND_ANSWER;  
-		break;
+    case WAIT_AUTHORIZATION_ANSWER:
+      if(HDLC_UnpackWaitAuthorization(HDLC_GetBuf, GET_BUF_SIZE) == 0)
+      {
+        Status = SEND_COMAND;
+        GetBufHead = 0;
+      }
+      break;
+    case SEND_COMAND:
+      HDLC_PackSendComand(Parameters.uartSendDataCB);
+      Status =  WAIT_COMAND_ANSWER;  
+      break;
     case WAIT_COMAND_ANSWER:
-		HDLC_UnpackWaitComand(&Volt, HDLC_GetBuf, GET_BUF_SIZE);
+      HDLC_UnpackWaitComand(&Volt, HDLC_GetBuf, GET_BUF_SIZE);
       break;
     default:
-      break;      
+      break;
   }
+
+  // если данные отправляются и принимаются нормально, то сброс таймаута
 }
 // ----------------------------------------------------------------------------
 void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init)
-{  
+{
   memset(init, 0, sizeof(t_InitParams) );
   GetBufHead = 0;
 }
@@ -188,6 +216,7 @@ void HDLC_ProtocolInit(t_InitParams *init)
   LocalTime = Parameters.getTicksCB();
   memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
   Autorization_status = SEND_1;
+//  void TimeOutReset(void);
 }
 // ----------------------------------------------------------------------------
 void HDLC_ProtocolPackAuthorization(uint8_t pasword)
@@ -197,20 +226,44 @@ void HDLC_ProtocolPackAuthorization(uint8_t pasword)
 // ----------------------------------------------------------------------------
 void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
 {
+//  for(int i = 0; i < len; ++i)
+//  {
+//    if(!RecordingInProgress)
+//    {
+//      if(data[i] == FLAG)
+//      {
+//        RecordingInProgress = true;
+//      }
+//    }
+
+//    if(RecordingInProgress)
+//    {
+//      HDLC_GetBuf[ GetBufHead++ ] = data[i];
+
+//      if(data[i] == FLAG)
+//      {
+//        RecordingInProgress = false;
+////        GetBufHead = 0;
+//      }
+////      if(длина данных превысила буфер)
+////      if(время ожидания истекло)
+//    }
+//  }
+
   for(int i = 0; i < len; ++i)
   {
     if( (data[i] == FLAG) && !RecordingInProgress)
     {
       RecordingInProgress = true;
     }
-    else if ( (data[i] == FLAG) && RecordingInProgress)
+    else if( (data[i] == FLAG) && RecordingInProgress)
     {
       HDLC_GetBuf[ GetBufHead ] = data[i];
       GetBufHead++;
       RecordingInProgress = false;
     }
-    
-    if (RecordingInProgress == true)
+
+    if(RecordingInProgress == true)
     {
       HDLC_GetBuf[ GetBufHead ] = data[i];
       GetBufHead++;
@@ -290,17 +343,20 @@ bool HDLC_GetConnectAutorization(uint8_t num)
 //  return (memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0);
 }
 //--------------------------------------------------------------------------------
-void HDLC_ConnectAutorization(void)
+void HDLC_ConnectAutorization(void) // (HDLC_GetBuf, len_data) return 0 - нет данных, 1 - данные нашлись, 2 - в процессе, 3 - окончание авторизации
 {
+//  int result = 0;
+//  bool data_find = false;
+
   switch(Autorization_status)
   {
     case SEND_1:
-      HDLC_SendConnectAutorization(0);
+      HDLC_SendConnectAutorization(0); // (void)
       Autorization_status = GET_1;
       break;
       // отправка сообщения авторизации
     case GET_1:
-      if( HDLC_GetConnectAutorization(0) )
+      if( /* data_find = */HDLC_GetConnectAutorization(0)/*(HDLC_GetBuf, len_data) return bool */ )
       {
         Autorization_status = SEND_2;
         GetBufHead = 0;
@@ -358,4 +414,6 @@ void HDLC_ConnectAutorization(void)
     default:
       break;
   }
+
+//  return result;
 }
