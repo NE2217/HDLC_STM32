@@ -38,6 +38,7 @@ uint8_t HDLC_UnpackWaitAuthorization(uint8_t* data, uint16_t len)
 uint8_t HDLC_UnpackWaitComand(float* Volt, uint8_t* data, uint16_t len)
 {
   float* V = Volt;
+	//*V = 0;
   uint8_t rev [4] = {0};
 
   uint8_t count = 0, i = 0;
@@ -55,8 +56,13 @@ uint8_t HDLC_UnpackWaitComand(float* Volt, uint8_t* data, uint16_t len)
   rev[0]=data[i-4];
 
 //  rev = (rev >> 24)|((rev << 8) & 0x00FF0000)|((rev >> 8) & 0x0000FF00)|(rev >> 24);
-  *V = *( (float*) rev );
-
+  /*
+	*V = *( (float*) rev );
+	if(200 < *V || *V < 300)
+		{
+			return 1;
+		}
+	*/	
   return 0;
 }
 //--------------------------------------------------------------------------------
