@@ -61,14 +61,15 @@
 #define SABME  0x6F  //режим длинного сбалансированного асинхронного ответа
 
 #pragma pack(push,1)
+#pragma anon_unions
 // TODO это две структуры объявлены правильно, кроме битовых полей. Остальные нужно сделать также
 
 typedef union {
   uint16_t point;
   struct {
-    uint16_t size : 11;  // TODO переделать все uint16_t в unsigned. Перепроверь все свои битовые поля
-    uint16_t S : 1;    //Ответ: При использовании unsigned, выделяется 4 байта под созданный тип
-    uint16_t typ : 4;
+    unsigned size : 11;  // TODO переделать все uint16_t в unsigned. Перепроверь все свои битовые поля
+    unsigned S : 1;    //Ответ: При использовании unsigned, выделяется 4 байта под созданный тип
+    unsigned typ : 4;
   }form;
 }t_format;
 
