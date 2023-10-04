@@ -34,7 +34,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define BUF_LEN           100u
-#define TIME_SLEAP        500u  //ms
+#define TIME_SLEAP        500u    //ms
 #define TIMEOUT            10u    //ms
 //#define READY_TO_TRANSMIT 1
 typedef enum
