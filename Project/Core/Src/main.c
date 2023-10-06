@@ -156,11 +156,12 @@ int main(void)
   t_InitParams init;
 
   HDLC_ProtocolInitParamsStructureReset(&init);
-  
+/*
   init.max_cadr_reception_data = 1024;
   init.max_cadr_transmission_data = 1024;
   init.max_window_reception_data = 1;
   init.max_window_transmission_data = 1;
+*/
   init.server_address = DEFAULT_SERVER_ADDRESS;
   init.client_address = DEFAULT_CLIENT_ADDRESS;
   memcpy(init.pasword, DEFAULT_PASWORD, 8);

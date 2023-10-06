@@ -83,16 +83,13 @@ float Rep_sum_Q = 0;
 float Rep_sum_P = 0;
 float Rep_sum_S = 0;
 float Rep_cos_f = 0;
-float Rep_activ_energe_import = 0;
-float Rep_reactiv_energe_import = 0;
+int64_t Rep_activ_energy_import = 0;
+int64_t Rep_reactiv_energy_import = 0;
+int64_t Rep_apparent_energy_import = 0;
 
-int64_t activ = 0;
-int64_t reactiv = 0;
-int64_t* Energe_Point[] = {&activ, &reactiv};
-
-float* Rep_Points[] = {&Rep_current_A, &Rep_current_B, &Rep_current_C, &Rep_volt_A, &Rep_volt_B, 
-                       &Rep_volt_C, &Rep_sum_Q, &Rep_sum_P, &Rep_sum_S, &Rep_cos_f, &Rep_activ_energe_import, 
-                       &Rep_reactiv_energe_import};
+void* Rep_Points[] = {&Rep_current_A, &Rep_current_B, &Rep_current_C, &Rep_volt_A, &Rep_volt_B, 
+                      &Rep_volt_C, &Rep_sum_Q, &Rep_sum_P, &Rep_sum_S, &Rep_cos_f, &Rep_activ_energy_import, 
+                      &Rep_reactiv_energy_import, &Rep_apparent_energy_import};
 uint8_t param_pos = 0;
 //--------------------------------------------------------------------------------
 
@@ -159,6 +156,8 @@ uint16_t GetBufHead;
 bool RecordingInProgress;
 
 void HDLC_ConnectAutorization(void);
+void HDLC_SendConnectAutorization_t(uint8_t* SendBuf, void SendData(uint8_t* data, uint16_t data_len));
+bool HDLC_GetConnectAutorization_t(uint8_t* GetBuf);
 
 void TimeOutReset(void);
 bool IsTimeOut(void);
@@ -172,8 +171,7 @@ bool HDLC_SendData(uint8_t *data, uint16_t len)
 {
   if(Parameters.uartSendDataCB == NULL)
     return false;
-
-// Parameters.uartSendDataCB()
+  
 // сброс таймаута
 }
 
@@ -192,7 +190,7 @@ void HDLC_ProtocolMain(void)
     return;
   LocalTime = Parameters.getTicksCB();
   
-  if( IsTimeOut() )
+  if( IsTimeOut() )// проверка таймаута if(IsTimeOut()) Status = NONE
   {
     TimeOutReset();
     Status = NONE;
@@ -201,16 +199,8 @@ void HDLC_ProtocolMain(void)
     param_pos = 0;
   }
 
-  if ( !WaitingForResponse || (IsBufstat() == BUFF_IS_FULL) )
+  if ( !WaitingForResponse || (IsBufstat() == BUFF_IS_FULL) )// TODO проверяем флаг принятых данных и отправляем на проверку дяльше
   {
-
-  //memcmp
-  // что-то делаем
-  // Parameters.uartSendDataCB()
-
-  // проверка таймаута if(IsTimeOut()) Status = NONE
-  // TODO проверяем флаг принятых данных и отправляем на проверку дяльше
-
     switch(Status)
     {
       case NONE:
@@ -218,14 +208,31 @@ void HDLC_ProtocolMain(void)
         Status = FIRST_AUTHORIZATION;
         TimeOutReset();
         break;
+      
       case FIRST_AUTHORIZATION:
-        HDLC_ConnectAutorization(); // (HDLC_GetBuf, len_data)
-        if(Autorization_status == AUTHORIZATION_COMPLETED)
+        switch(Autorization_status)
         {
-          Status = SEND_CONFIG_PARAM;
-          WaitingForResponse = false;
+          //HDLC_ConnectAutorization(); //(HDLC_GetBuf, len_data)
+          case SEND_1:case SEND_2:case SEND_3:case SEND_4:case SEND_5:
+            HDLC_SendConnectAutorization_t(HDLC_SendBuf, Parameters.uartSendDataCB);
+            TimeOutReset();
+            WaitingForResponse = true;
+            break;
+          case GET_1:case GET_2:case GET_3:case GET_4:case GET_5:
+            if(HDLC_GetConnectAutorization_t(HDLC_GetBuf) == 0)
+            {
+              BufReset();
+              WaitingForResponse = false;
+            }
+            break;
+        
+          case AUTHORIZATION_COMPLETED:
+            Status = SEND_CONFIG_PARAM;
+            WaitingForResponse = false;
+            break;
+          default:
+            break;
         }
-        break;
       case SEND_CONFIG_PARAM:
         HDLC_PackSendConfigParam(Parameters.uartSendDataCB);
         Status = WAIT_CONFIG_PARAM_ANSWER;
@@ -262,25 +269,11 @@ void HDLC_ProtocolMain(void)
         if (NRS>7) NRS=0;
         break;
       case WAIT_COMAND_ANSWER:
-        HDLC_UnpackComand(Rep_Points[param_pos], Energe_Point[param_pos%10], HDLC_GetBuf, GET_BUF_SIZE);
+        HDLC_UnpackComand(Rep_Points[param_pos], HDLC_GetBuf, GET_BUF_SIZE);
         Status = SEND_COMAND;
         WaitingForResponse = false;
         BufReset();
         break;
-/*
-      case SEND_COMAND_current:
-        HDLC_PackSendComand(send_current, sizeof(send_current), 2,Parameters.uartSendDataCB);
-        Status =  WAIT_COMAND_ANSWER_current;  
-        TimeOutReset();
-        WaitingForResponse = true;
-        break;
-      case WAIT_COMAND_ANSWER_current:
-        HDLC_UnpackCurrentComand(&Current, HDLC_GetBuf, GET_BUF_SIZE);
-        //Status = SEND_COMAND_volt;
-        WaitingForResponse = false;
-        BufReset();
-        break;
-*/
       default:
         break;
     }
@@ -302,6 +295,11 @@ void HDLC_ProtocolInit(t_InitParams *init)
   LocalTime = Parameters.getTicksCB();
   memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
   Autorization_status = SEND_1;
+  
+  Parameters.max_cadr_reception_data = 1024;
+  Parameters.max_cadr_transmission_data = 1024;
+  Parameters.max_window_reception_data = 1;
+  Parameters.max_window_transmission_data = 1;
 //  void TimeOutReset(void);
 }
 //-----------------------------------------------------------------------------
@@ -310,7 +308,6 @@ void HDLC_ProtocolPackAuthorization(uint8_t pasword)
   memcmp(HDLC_SendBuf, authorize_msg, sizeof(authorize_msg));
 }
 //------------------------------CONNECT----------------------------------------
-
 void BufReset(void)
 {
   BufStat = BUFF_IS_EMPTY;
@@ -344,31 +341,6 @@ bool IsTimeOut(void)
 }
 void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
 {
-/*  
-  for(int i = 0; i < len; ++i)
-  {
-    if(!RecordingInProgress)
-    {
-      if(data[i] == FLAG)
-      {
-        RecordingInProgress = true;
-      }
-    }
-
-    if(RecordingInProgress)
-    {
-      HDLC_GetBuf[ GetBufHead++ ] = data[i];
-
-      if(data[i] == FLAG)
-      {
-        RecordingInProgress = false;
-//        GetBufHead = 0;
-      }
-//      if(длина данных превысила буфер)
-//      if(время ожидания истекло)
-    }
-  }
-*/
   if( IsBufstat() == BUFF_IS_EMPTY )
   {
    for(int i = 0; i < len; ++i)
@@ -393,7 +365,6 @@ void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
    }
   }  
 }
-
 // ----------------------------------------------------------------------------
 //Показания_____________________
 float GetVoltageA(void)
@@ -450,97 +421,154 @@ float GetEnergyReactiveExport(void)
   return 0;
 }
 //--------------------------------------------------------------------------------
-void HDLC_SendConnectAutorization(uint8_t num)
+void HDLC_SendConnectAutorization_t(uint8_t* SendBuf, void SendData(uint8_t* data, uint16_t data_len))
 {
-  memcpy(HDLC_SendBuf, ConnectAutorizationSendPacks[num].point, ConnectAutorizationSendPacks[num].size);
-  Parameters.uartSendDataCB(HDLC_SendBuf, ConnectAutorizationSendPacks[num].size);
-}
-//--------------------------------------------------------------------------------
-bool HDLC_GetConnectAutorization(uint8_t num)
-{
-  if(memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0)
+  switch (Autorization_status)
   {
-    return true;
-  }
-  return false;
-
-//  return (memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0);
-}
-//----------------------------------FIRST AUTORIZATION----------------------------------------------
-void HDLC_ConnectAutorization(void) // (HDLC_GetBuf, len_data) return 0 - нет данных, 1 - данные нашлись, 2 - в процессе, 3 - окончание авторизации
-{
-//  int result = 0;
-//  bool data_find = false;
-
-  switch(Autorization_status)
-  {
-    case SEND_1:
-      HDLC_SendConnectAutorization(0); // (void)
-      TimeOutReset();
-      Autorization_status = GET_1;
-      break;
-      // отправка сообщения авторизации
     case GET_1:
-      if( /* data_find = */HDLC_GetConnectAutorization(0)/*(HDLC_GetBuf, len_data) return bool */ )
-      {
-        Autorization_status = SEND_2;
-        BufReset();
-      }
+     memcpy(SendBuf, ConnectAutorizationSendPacks[0].point, ConnectAutorizationSendPacks[0].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[0].size);
+     Autorization_status = SEND_2;
     break;
-    case SEND_2:
-      HDLC_SendConnectAutorization(1);
-      TimeOutReset();
-      Autorization_status = GET_2;
-      break;
-      // отправка сообщения авторизации
     case GET_2:
-      if(  HDLC_GetConnectAutorization(1) )
-      {
-        Autorization_status = SEND_3;
-        BufReset();
-      }
-      break;
-    case SEND_3:
-      HDLC_SendConnectAutorization(2);
-      TimeOutReset();
-      Autorization_status = GET_3;
-      break;
-      // отправка сообщения авторизации
+     memcpy(SendBuf, ConnectAutorizationSendPacks[1].point, ConnectAutorizationSendPacks[1].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[1].size);
+     Autorization_status = SEND_3;
+    break;
     case GET_3:
-      if( HDLC_GetConnectAutorization(2) )
-      {
-        Autorization_status = SEND_4;
-        BufReset();
-      }
-      break;
-    case SEND_4:
-      HDLC_SendConnectAutorization(3);
-      TimeOutReset();
-      Autorization_status = GET_4;
-      break;
-      // отправка сообщения авторизации
+     memcpy(SendBuf, ConnectAutorizationSendPacks[2].point, ConnectAutorizationSendPacks[2].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[2].size);
+     Autorization_status = SEND_4;
+    break;
     case GET_4:
-      if( HDLC_GetConnectAutorization(3) )
-      {
-        Autorization_status = SEND_5;
-        BufReset();
-      }
-      break;
-    case SEND_5:
-      HDLC_SendConnectAutorization(4);
-      TimeOutReset();
-      Autorization_status = GET_5;
-      break;
-      // отправка сообщения авторизации
+     memcpy(SendBuf, ConnectAutorizationSendPacks[3].point, ConnectAutorizationSendPacks[3].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[3].size);
+     Autorization_status = SEND_5;
+    break;
     case GET_5:
-      if(HDLC_GetConnectAutorization(4))
-      {
-        Autorization_status = AUTHORIZATION_COMPLETED;
-        BufReset();
-      }
-      break;
+     memcpy(SendBuf, ConnectAutorizationSendPacks[4].point, ConnectAutorizationSendPacks[4].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[4].size);
+     Autorization_status = AUTHORIZATION_COMPLETED;
+    break;
     default:
       break;
   }
 }
+//--------------------------------------------------------------------------------
+bool HDLC_GetConnectAutorization_t(uint8_t* GetBuf)
+{
+int N = 0;
+    switch (Autorization_status)
+  {
+    case SEND_1:
+     N=0;
+     Autorization_status = GET_1;
+    break;
+    case SEND_2:
+     N=1;
+     Autorization_status = GET_2;
+    break;
+    case SEND_3:
+     N=2;
+     Autorization_status = GET_3;
+    break;
+    case SEND_4:
+     N=3;
+     Autorization_status = GET_4;
+    break;
+    case SEND_5:
+     N=4;
+     Autorization_status = GET_5;
+    break;
+    default:
+      break;
+  }
+
+  if(memcmp(ConnectAutorizationGetPacks[N].point, GetBuf, ConnectAutorizationGetPacks[N].size) == 0)
+  {
+    return true;
+  }
+  return false;
+  
+//  return (memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0);
+}
+//----------------------------------FIRST AUTORIZATION----------------------------------------------
+
+//void HDLC_ConnectAutorization(void) // (HDLC_GetBuf, len_data) return 0 - нет данных, 1 - данные нашлись, 2 - в процессе, 3 - окончание авторизации
+//{
+////  int result = 0;
+////  bool data_find = false;
+
+//  switch(Autorization_status)
+//  {
+//    case SEND_1:
+//      HDLC_SendConnectAutorization(0); // (void)
+//      TimeOutReset();
+//      Autorization_status = GET_1;
+//      break;
+//      // отправка сообщения авторизации
+//    case GET_1:
+//      if( /* data_find = */HDLC_GetConnectAutorization(0)/*(HDLC_GetBuf, len_data) return bool */ )
+//      {
+//        Autorization_status = SEND_2;
+//        BufReset();
+//      }
+//    break;
+//    case SEND_2:
+//      HDLC_SendConnectAutorization(1);
+//      TimeOutReset();
+//      Autorization_status = GET_2;
+//      break;
+//      // отправка сообщения авторизации
+//    case GET_2:
+//      if(  HDLC_GetConnectAutorization(1) )
+//      {
+//        Autorization_status = SEND_3;
+//        BufReset();
+//      }
+//      break;
+//    case SEND_3:
+//      HDLC_SendConnectAutorization(2);
+//      TimeOutReset();
+//      Autorization_status = GET_3;
+//      break;
+//      // отправка сообщения авторизации
+//    case GET_3:
+//      if( HDLC_GetConnectAutorization(2) )
+//      {
+//        Autorization_status = SEND_4;
+//        BufReset();
+//      }
+//      break;
+//    case SEND_4:
+//      HDLC_SendConnectAutorization(3);
+//      TimeOutReset();
+//      Autorization_status = GET_4;
+//      break;
+//      // отправка сообщения авторизации
+//    case GET_4:
+//      if( HDLC_GetConnectAutorization(3) )
+//      {
+//        Autorization_status = SEND_5;
+//        BufReset();
+//      }
+//      break;
+//    case SEND_5:
+//      HDLC_SendConnectAutorization(4);
+//      TimeOutReset();
+//      Autorization_status = GET_5;
+//      break;
+//      // отправка сообщения авторизации
+//    case GET_5:
+//      if(HDLC_GetConnectAutorization(4))
+//      {
+//        Autorization_status = AUTHORIZATION_COMPLETED;
+//        BufReset();
+//      }
+//      break;
+//    default:
+//      break;
+//  }
+//}
+
 //  return result;

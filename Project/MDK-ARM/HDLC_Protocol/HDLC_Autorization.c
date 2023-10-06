@@ -6,11 +6,11 @@
 #include "HDLC_unpack.h"
 #include "HDLC_pack.h"
 
-#define POLLING_TIME              1000u
-#define SEND_BUF_SIZE            100u
-#define GET_BUF_SIZE              100u
-#define SEND_AUTHORIZATION_SIZE  100u
-#define FLAG                      0x7E
+#define POLLING_TIME               1000u
+#define SEND_BUF_SIZE               100u
+#define GET_BUF_SIZE                100u
+#define SEND_AUTHORIZATION_SIZE     100u
+#define FLAG                        0x7E
 
 typedef enum 
 {
@@ -37,7 +37,6 @@ typedef struct
 bool GetCorrect = false;
 t_HDLC_Autorization_status Autorization_status;
 //--------------------------------------------------------------------------------
-
 uint8_t send_1[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
 0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
 0x00, 0x01, 0x72, 0xE3, 0x7E };
@@ -93,90 +92,76 @@ t_PointAndSize ConnectAutorizationGetPacks[] = {  get_1, sizeof(get_1),
 //--------------------------------------------------------------------------------
 bool RecordingInProgress;
 //--------------------------------------------------------------------------------
-void HDLC_SendConnectAutorization(uint8_t num)
+void HDLC_SendConnectAutorization(uint8_t* SendBuf, void SendData(uint8_t* data, uint16_t data_len))
 {
-  memcpy(HDLC_SendBuf, ConnectAutorizationSendPacks[num].point, ConnectAutorizationSendPacks[num].size);
-  Parameters.uartSendDataCB(HDLC_SendBuf, ConnectAutorizationSendPacks[num].size);
-}
-//--------------------------------------------------------------------------------
-bool HDLC_GetConnectAutorization(uint8_t num)
-{
-  if(memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0)
+  switch (Autorization_status)
   {
-    return true;
-  }
-  return false;
-
-//  return (memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0);
-}
-//--------------------------------------------------------------------------------
-void HDLC_ConnectAutorization(void)
-{
-  switch(Autorization_status)
-  {
-    case SEND_1:
-      HDLC_SendConnectAutorization(0);
-      Autorization_status = GET_1;
-      break;
-      // отправка сообщения авторизации
     case GET_1:
-      if( HDLC_GetConnectAutorization(0) )
-      {
-        Autorization_status = SEND_2;
-        GetBufHead = 0;
-      }
+     memcpy(SendBuf, ConnectAutorizationSendPacks[0].point, ConnectAutorizationSendPacks[0].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[0].size);
+     Autorization_status = SEND_2;
     break;
-    case SEND_2:
-      HDLC_SendConnectAutorization(1);
-      Autorization_status = GET_2;
-      break;
-      // отправка сообщения авторизации
     case GET_2:
-      if(  HDLC_GetConnectAutorization(1) )
-      {
-        Autorization_status = SEND_3;
-        GetBufHead = 0;
-      }
-      break;
-    case SEND_3:
-      HDLC_SendConnectAutorization(2);
-      Autorization_status = GET_3;
-      break;
-      // отправка сообщения авторизации
+     memcpy(SendBuf, ConnectAutorizationSendPacks[1].point, ConnectAutorizationSendPacks[1].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[1].size);
+     Autorization_status = SEND_3;
+    break;
     case GET_3:
-      if( HDLC_GetConnectAutorization(2) )
-      {
-        Autorization_status = SEND_4;
-        GetBufHead = 0;
-      }
-      break;
-    case SEND_4:
-      HDLC_SendConnectAutorization(3);
-      Autorization_status = GET_4;
-      break;
-      // отправка сообщения авторизации
+     memcpy(SendBuf, ConnectAutorizationSendPacks[2].point, ConnectAutorizationSendPacks[2].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[2].size);
+     Autorization_status = SEND_4;
+    break;
     case GET_4:
-      if( HDLC_GetConnectAutorization(3) )
-      {
-        Autorization_status = SEND_5;
-        GetBufHead = 0;
-      }
-      break;
-    case SEND_5:
-      HDLC_SendConnectAutorization(4);
-      Autorization_status = GET_5;
-      break;
-      // отправка сообщения авторизации
+     memcpy(SendBuf, ConnectAutorizationSendPacks[3].point, ConnectAutorizationSendPacks[3].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[3].size);
+     Autorization_status = SEND_5;
+    break;
     case GET_5:
-      if(HDLC_GetConnectAutorization(4))
-      {
-        GetCorrect = true;
-        Status = SEND_AUTHORIZATION;
-        GetBufHead = 0;
-      }
-      break;
+     memcpy(SendBuf, ConnectAutorizationSendPacks[4].point, ConnectAutorizationSendPacks[4].size);
+     SendData(SendBuf, ConnectAutorizationSendPacks[4].size);
+     Autorization_status = AUTHORIZATION_COMPLETED;
+    break;
     default:
       break;
   }
 }
+//--------------------------------------------------------------------------------
+bool HDLC_GetConnectAutorization(uint8_t* GetBuf)
+{
+int N = 0;
+    switch (Autorization_status)
+  {
+    case SEND_1:
+     N=0;
+     Autorization_status = GET_1;
+    break;
+    case SEND_2:
+     N=1;
+     Autorization_status = GET_2;
+    break;
+    case SEND_3:
+     N=2;
+     Autorization_status = GET_3;
+    break;
+    case SEND_4:
+     N=3;
+     Autorization_status = GET_4;
+    break;
+    case SEND_5:
+     N=4;
+     Autorization_status = GET_5;
+    break;
+    default:
+      break;
+  }
+
+  if(memcmp(ConnectAutorizationGetPacks[N].point, GetBuf, ConnectAutorizationGetPacks[N].size) == 0)
+  {
+    return true;
+  }
+  return false;
+  
+//  return (memcmp(ConnectAutorizationGetPacks[num].point, HDLC_GetBuf, ConnectAutorizationGetPacks[num].size) == 0);
+}
+//--------------------------------------------------------------------------------
 */
