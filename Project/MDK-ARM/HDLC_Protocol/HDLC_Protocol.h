@@ -29,6 +29,8 @@ void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init);
 void HDLC_ProtocolInit(t_InitParams *init);
 void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len);
 
+bool IsConnect(void); // TODO добавить функцию определения наличия связи
+
 float GetVoltageA(void);
 float GetVoltageB(void);
 float GetVoltageC(void);

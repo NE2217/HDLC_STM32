@@ -13,11 +13,11 @@
 #define FLAG                    0x7E
 
 typedef struct{
-  unsigned I:1;
+  unsigned  I:1;
   unsigned NS:3;
   unsigned PS:1;
   unsigned NR:3;
-} t_control_comand;
+} t_control_comand; // TODO ВНИМАНИЕ!!! такое же имя имеет union
 
 typedef enum
 {
@@ -73,6 +73,7 @@ t_protocol_status Status;
 t_HDLC_Autorization_status Autorization_status;
 t_InitParams Parameters;
 //--------------------------------------------------------------------------------
+// TODO инициализацию сделать в INIT функции
 float Rep_current_A = 0;
 float Rep_current_B = 0;
 float Rep_current_C = 0;
@@ -90,7 +91,7 @@ int64_t Rep_apparent_energy_import = 0;
 void* Rep_Points[] = {&Rep_current_A, &Rep_current_B, &Rep_current_C, &Rep_volt_A, &Rep_volt_B, 
                       &Rep_volt_C, &Rep_sum_Q, &Rep_sum_P, &Rep_sum_S, &Rep_cos_f, &Rep_activ_energy_import, 
                       &Rep_reactiv_energy_import, &Rep_apparent_energy_import};
-uint8_t param_pos = 0;
+uint8_t param_pos = 0; // TODO глобльную сделать с большой буквы
 //--------------------------------------------------------------------------------
 
 uint8_t send_1[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
@@ -146,7 +147,7 @@ t_PointAndSize ConnectAutorizationGetPacks[] = {  get_1, sizeof(get_1),
                                                   get_4, sizeof(get_4),
                                                   get_5, sizeof(get_5), };
 //--------------------------------------------------------------------------------
-uint8_t NRS=1;
+uint8_t NRS=1; 
 uint8_t authorize_msg[] = {0,0,0,0,0,0};
 
 uint8_t HDLC_SendBuf[SEND_BUF_SIZE];
@@ -171,7 +172,7 @@ bool HDLC_SendData(uint8_t *data, uint16_t len)
 {
   if(Parameters.uartSendDataCB == NULL)
     return false;
-  
+  return true;
 // сброс таймаута
 }
 
@@ -219,7 +220,7 @@ void HDLC_ProtocolMain(void)
             WaitingForResponse = true;
             break;
           case GET_1:case GET_2:case GET_3:case GET_4:case GET_5:
-            if(HDLC_GetConnectAutorization_t(HDLC_GetBuf) == 0)
+            if(HDLC_GetConnectAutorization_t(HDLC_GetBuf) == 0) // TODO false
             {
               BufReset();
               WaitingForResponse = false;
@@ -263,7 +264,7 @@ void HDLC_ProtocolMain(void)
         break;
       case SEND_COMAND:
         param_pos = HDLC_PackSendComand(NRS++,Parameters.uartSendDataCB);
-        Status =  WAIT_COMAND_ANSWER;  
+        Status =  WAIT_COMAND_ANSWER;
         TimeOutReset();
         WaitingForResponse = true;
         if (NRS>7) NRS=0;
@@ -280,6 +281,15 @@ void HDLC_ProtocolMain(void)
   }
   // если данные отправляются и принимаются нормально, то сброс таймаута
 }
+// ----------------------------------------------------------------------------
+//#define NRS_MASK 7u TODO
+//#define NRS_RESET_VALUE  1u
+//void ResetNRS(void)
+//{ NRS = NRS_RESET_VALUE; }
+//uint8_t GetNextNRS(void)
+//{
+//  return (++NRS & NRS_MASK);
+//}
 // ----------------------------------------------------------------------------
 void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init)
 {
@@ -300,6 +310,7 @@ void HDLC_ProtocolInit(t_InitParams *init)
   Parameters.max_cadr_transmission_data = 1024;
   Parameters.max_window_reception_data = 1;
   Parameters.max_window_transmission_data = 1;
+// TODO  NRS=1; 
 //  void TimeOutReset(void);
 }
 //-----------------------------------------------------------------------------
@@ -366,6 +377,7 @@ void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
   }  
 }
 // ----------------------------------------------------------------------------
+// TODO заменить нули на реальные данные
 //Показания_____________________
 float GetVoltageA(void)
 {
@@ -457,8 +469,8 @@ void HDLC_SendConnectAutorization_t(uint8_t* SendBuf, void SendData(uint8_t* dat
 //--------------------------------------------------------------------------------
 bool HDLC_GetConnectAutorization_t(uint8_t* GetBuf)
 {
-int N = 0;
-    switch (Autorization_status)
+  int N = 0;
+  switch (Autorization_status)
   {
     case SEND_1:
      N=0;
