@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "HDLC_Protocol.h"
 #include "HDLC_pack.h"
 #include "MAC_Pack.h"
 #include "CRC.h"
@@ -9,9 +10,9 @@
 #define CONTROL_FIELDS_SIZE      14
 #define LEN_DATA_REQUEST         16
 #define NUMBER_OF_PARAMETERS     13
+#define LOCAL_BUF_LEN           100
 //--------------------------------------------------------------------------------
 #pragma pack(push,1)
-#pragma anon_unions // TODO надо разобраться
 typedef enum {
   SEND_CURRENT_A=0,
   SEND_CURRENT_B,
@@ -34,8 +35,8 @@ typedef union {
     unsigned NR:3;
     unsigned PS:1;
     unsigned NS:3;
-  }; // TODO добавить имя
-} t_control_comand; // TODO !!! уже есть структура с таким же именем!!!
+  }Is;
+} t_control_comand;
 #pragma pack(pop)
 //--------------------------------------------------------------------------------
 // OBIS коды запрашиваемых данных
@@ -57,7 +58,7 @@ static const uint8_t* Send_comands_points[] = {Send_current_A, Send_current_B, S
                                   Send_sum_P, Send_sum_S, Send_cos_f, Send_activ_energy_import, Send_reactiv_energy_import, Send_apparent_energy_import};
 uint8_t PosParam=0;
 // TODO задефайнить адреса
-uint8_t DA_SA[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
+static uint8_t DA_SA[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
   uint8_t request_connect[] = {0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
   0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
   0x00, 0x01, 0x72, 0xE3, 0x7E };
@@ -68,7 +69,7 @@ uint8_t DA_SA[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
   0x35, 0x36, 0x37, 0x38, 0xBE, 0x10, 0x04, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x06, 0x5F, 0x1F, 0x04,
   0x00, 0xFF, 0xFF, 0xFF, 0x08, 0x00, 0xD5, 0x24, 0x7E };
 
-uint8_t buf[100] = {0}; // TODO с большой буквы. Размер задефайнить
+uint8_t LocalBuf[LOCAL_BUF_LEN] = {0}; // TODO с большой буквы. Размер задефайнить
 //--------------------------------------------------------------------------------
 
 uint8_t HDLC_PackSendConfigParam(void (*uartSendDataCB)(uint8_t *data, uint16_t len))
@@ -88,13 +89,12 @@ uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_
 
 uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint16_t len))
 {
-//  uint16_t len = 50;
   uint16_t pack_size = LEN_DATA_REQUEST + CONTROL_FIELDS_SIZE;
   t_control_comand control;
-  control.NR = N;
-  control.PS = 1;
-  control.NS = N;
-  control.I =  0;
+  control.Is.NR = N;
+  control.Is.PS = 1;
+  control.Is.NS = N;
+  control.Is.I =  0;
 
   if( PosParam >= NUMBER_OF_PARAMETERS )
     PosParam = 0;
@@ -104,8 +104,8 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
 */
   t_HDLC_packet p_pack;
 
-  p_pack.begin = (t_HDLC_packet_begin*)buf;
-  p_pack.end = (t_HDLC_packet_end*) (&buf[ pack_size - sizeof(t_HDLC_packet_end) ]);
+  p_pack.begin = (t_HDLC_packet_begin*)LocalBuf;
+  p_pack.end = (t_HDLC_packet_end*) (&LocalBuf[ pack_size - sizeof(t_HDLC_packet_end) ]);
 
   p_pack.begin->flag_open = FLAG;
 
@@ -122,7 +122,7 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
   p_pack.end->FCS        = f_crc16(((uint8_t*)&p_pack.begin->format.point), pack_size - 4);
   p_pack.end->flag_close = FLAG;
 
-  uartSendDataCB(buf, pack_size);
+  uartSendDataCB(LocalBuf, pack_size);
 
   return PosParam++;
 }

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "MAC_Pack.h"
 #include "CRC.h"
 

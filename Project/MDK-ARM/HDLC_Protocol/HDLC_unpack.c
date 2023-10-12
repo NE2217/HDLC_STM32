@@ -5,6 +5,8 @@
 #include "MAC_Pack.h"
 #include "CRC.h"
 //--------------------------------------------------------------------------------
+#define FLOAT      0x17
+#define INT_64     0x14
 typedef struct
 {
   uint8_t MAC_start [11];
@@ -31,7 +33,6 @@ uint8_t HDLC_UnpackWaitConfigParam(uint8_t* data, uint16_t len)
   {
     return 0;
   }
-
   return 1;
 }
 //--------------------------------------------------------------------------------
@@ -50,7 +51,7 @@ uint8_t HDLC_UnpackComand(void* Param, uint8_t* data, uint16_t len)
 {
   t_answer* pac = (t_answer*)data;
   uint8_t rev[8] = {0};
-  if (pac->type == 0x17)
+  if (pac->type == FLOAT)
   {
     rev[3] = *(&pac->value + 0);
     rev[2] = *(&pac->value + 1);
@@ -61,7 +62,7 @@ uint8_t HDLC_UnpackComand(void* Param, uint8_t* data, uint16_t len)
     *Par = *( (float*) rev );
   }
   
-  else if(pac->type == 0x14)
+  else if(pac->type == INT_64)
   {
     rev[7] = *(&pac->value + 0);
     rev[6] = *(&pac->value + 1);
