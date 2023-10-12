@@ -5,14 +5,16 @@
 #include "MAC_Pack.h"
 #include "CRC.h"
 //--------------------------------------------------------------------------------
+#define FLOAT      0x17
+#define INT_64     0x14
 typedef struct
 {
   uint8_t MAC_start [11];
   uint8_t res[3];
   uint8_t req_res;
   uint8_t res_2[3];
-  uint8_t tupe;
-  uint8_t vole;
+  uint8_t type;
+  uint8_t value;
 }t_answer;
 //--------------------------------------------------------------------------------
 uint8_t response_connect[] = { 0x7E, 0xA0, 0x23, 0x41, 0x00, 0x02, 0x44, 0xC9, 0x73, 0xB9, 0x33, 0x81, 0x80, 0x14, 0x05, 0x02,
@@ -31,7 +33,6 @@ uint8_t HDLC_UnpackWaitConfigParam(uint8_t* data, uint16_t len)
   {
     return 0;
   }
-
   return 1;
 }
 //--------------------------------------------------------------------------------
@@ -45,31 +46,32 @@ uint8_t HDLC_UnpackWaitAuthorization(uint8_t* data, uint16_t len)
   return 1;
 }
 //--------------------------------------------------------------------------------
+// TODO задефайнить 0x17 и 0x14
 uint8_t HDLC_UnpackComand(void* Param, uint8_t* data, uint16_t len)
 {
   t_answer* pac = (t_answer*)data;
   uint8_t rev[8] = {0};
-  if (pac->tupe == 0x17)
+  if (pac->type == FLOAT)
   {
-    rev[3] = *(&pac->vole + 0);
-    rev[2] = *(&pac->vole + 1);
-    rev[1] = *(&pac->vole + 2);
-    rev[0] = *(&pac->vole + 3);
+    rev[3] = *(&pac->value + 0);
+    rev[2] = *(&pac->value + 1);
+    rev[1] = *(&pac->value + 2);
+    rev[0] = *(&pac->value + 3);
 
     float* Par = Param;
     *Par = *( (float*) rev );
   }
   
-  else if(pac->tupe == 0x14)
+  else if(pac->type == INT_64)
   {
-    rev[7] = *(&pac->vole + 0);
-    rev[6] = *(&pac->vole + 1);
-    rev[5] = *(&pac->vole + 2);
-    rev[4] = *(&pac->vole + 3);
-    rev[3] = *(&pac->vole + 4);
-    rev[2] = *(&pac->vole + 5);
-    rev[1] = *(&pac->vole + 6);
-    rev[0] = *(&pac->vole + 7);
+    rev[7] = *(&pac->value + 0);
+    rev[6] = *(&pac->value + 1);
+    rev[5] = *(&pac->value + 2);
+    rev[4] = *(&pac->value + 3);
+    rev[3] = *(&pac->value + 4);
+    rev[2] = *(&pac->value + 5);
+    rev[1] = *(&pac->value + 6);
+    rev[0] = *(&pac->value + 7);
     
     int64_t* Par = Param;
     *Par = *( (int64_t*) rev );
