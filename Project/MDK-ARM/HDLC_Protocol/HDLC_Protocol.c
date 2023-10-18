@@ -133,7 +133,7 @@ t_PointAndSize ConnectAutorizationSendPacks[] = { send_1, sizeof(send_1),
                                                   send_4, sizeof(send_4),
                                                   send_5, sizeof(send_5), };
 
-t_PointAndSize ConnectAutorizationGetPacks[] = {  get_1, sizeof(get_1),
+t_PointAndSize ConnectAutorizationGetPacks[]  = { get_1, sizeof(get_1),
                                                   get_2, sizeof(get_2),
                                                   get_3, sizeof(get_3),
                                                   get_4, sizeof(get_4),
@@ -174,7 +174,7 @@ uint32_t GetTicks(void)
     return 0;
   return Parameters.getTicksCB();
 }
-// ----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 void HDLC_ProtocolMain(void) 
 {
   uint32_t time = Parameters.getTicksCB();
@@ -183,7 +183,7 @@ void HDLC_ProtocolMain(void)
     return;
   LocalTime = Parameters.getTicksCB();
   
-  if( IsTimeOut() )// проверка таймаута if(IsTimeOut()) Status = NONE
+  if( IsTimeOut() )
   {
     TimeOutReset();
     Status = NONE;
@@ -193,16 +193,16 @@ void HDLC_ProtocolMain(void)
     Connect = false;
   }
 
-  if ( !WaitingForResponse || (IsBufstat() == BUFF_IS_FULL) )// TODO проверяем флаг принятых данных и отправляем на проверку дяльше
+  if ( !WaitingForResponse || (IsBufstat() == BUFF_IS_FULL) )
   {
-    switch(Status)
+   switch(Status)
     {
       case NONE:
         Autorization_status = SEND_1;
-        Status = FIRST_AUTHORIZATION;
+      Status = SEND_CONFIG_PARAM;//FIRST_AUTHORIZATION;
         TimeOutReset();
         break;
-
+/*
       case FIRST_AUTHORIZATION:
         switch(Autorization_status)
         {
@@ -228,16 +228,19 @@ void HDLC_ProtocolMain(void)
           default:
             break;
         }
+        //break;
+*/
       case SEND_CONFIG_PARAM:
         HDLC_PackSendConfigParam(Parameters.uartSendDataCB);
         Status = WAIT_CONFIG_PARAM_ANSWER;
         TimeOutReset();
         WaitingForResponse = true;
         break;
+
       case WAIT_CONFIG_PARAM_ANSWER:
         if(HDLC_UnpackWaitConfigParam(HDLC_GetBuf, GET_BUF_SIZE) == 0)
         {
-          Status = SEND_AUTHORIZATION;
+          Status = SEND_AUTHORIZATION;//FIRST_AUTHORIZATION;---------------------------------------!
           BufReset();
           WaitingForResponse = false;
         }
@@ -460,7 +463,7 @@ int64_t GetEnergyApparentImport(void)
 //----------------------------------FIRST AUTORIZATION----------------------------------------------
 void HDLC_SendConnectAutorization_t(uint8_t* SendBuf, void SendData(uint8_t* data, uint16_t data_len))
 {
-  switch (Autorization_status)
+    switch (Autorization_status)
   {
     case GET_1:
      memcpy(SendBuf, ConnectAutorizationSendPacks[0].point, ConnectAutorizationSendPacks[0].size);
@@ -494,7 +497,7 @@ void HDLC_SendConnectAutorization_t(uint8_t* SendBuf, void SendData(uint8_t* dat
 //--------------------------------------------------------------------------------
 bool HDLC_GetConnectAutorization_t(uint8_t* GetBuf)
 {
-  int N = 0;
+int N = 0;
   switch (Autorization_status)
   {
     case SEND_1:
@@ -527,4 +530,3 @@ bool HDLC_GetConnectAutorization_t(uint8_t* GetBuf)
   }
   return false;
 }
-
