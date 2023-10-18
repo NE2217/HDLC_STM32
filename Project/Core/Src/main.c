@@ -25,6 +25,7 @@
 #include "stdbool.h"
 #include "HDLC_Protocol.h"
 #include "ModBusSlave.h"
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -161,7 +162,6 @@ void UartSendDataMB(uint8_t *data, uint16_t len)
 }
 // ----------------------------------------------------------------------------
 
-
 // ----------------------------------------------------------------------------
 /* USER CODE END 0 */
 
@@ -172,26 +172,9 @@ void UartSendDataMB(uint8_t *data, uint16_t len)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
- // t_typeflConvert HDLC_to_MB_voltageA;
   t_typeflConvert HDLC_to_MB_fl;
-/*
-  t_typeflConvert HDLC_to_MB_current_A;
-  t_typeflConvert HDLC_to_MB_current_B;
-  t_typeflConvert HDLC_to_MB_current_C;
-  t_typeflConvert HDLC_to_MB_volt_A;
-  t_typeflConvert HDLC_to_MB_volt_B;
-  t_typeflConvert HDLC_to_MB_volt_C;
-  t_typeflConvert HDLC_to_MB_sum_Q;
-  t_typeflConvert HDLC_to_MB_sum_P;
-  t_typeflConvert HDLC_to_MB_sum_S;
-  t_typeflConvert HDLC_to_MB_cos_f;
-*/
   t_typeI64Convert HDLC_to_MB_i64;
-  /*
-  t_typeI64Convert HDLC_to_MB_activ_energy_import;
-  t_typeI64Convert HDLC_to_MB_reactiv_energy_import;
-  t_typeI64Convert HDLC_to_MB_apparent_energy_import;
-  */
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -240,7 +223,7 @@ int main(void)
   initMB._GetTicks100Mks = HAL_GetTick;
   initMB._sendByte = UartSendDataMB;
   initMB.HoldingRegistersPtr = SendRegMB;
-  initMB.HoldingRegistersSize = 32;
+  initMB.HoldingRegistersSize = 36;
   
   ModBusInit(&initMB);
   
@@ -278,10 +261,10 @@ int main(void)
     TES = GetEnergyActiveImport();
     for(int i=0; i+3<12; i+=4)
     {
-      SendRegMB[ (i+20) ]=HDLC_to_MB_i64.u16[ i ];
-      SendRegMB[(i+20)+1]=HDLC_to_MB_i64.u16[i+1];
-      SendRegMB[(i+20)+2]=HDLC_to_MB_i64.u16[i+2];
-      SendRegMB[(i+20)+3]=HDLC_to_MB_i64.u16[i+3];
+      SendRegMB[ (i+20) ]=HDLC_to_MB_i64.u16[i+3];
+      SendRegMB[(i+20)+1]=HDLC_to_MB_i64.u16[i+2];
+      SendRegMB[(i+20)+2]=HDLC_to_MB_i64.u16[i+1];
+      SendRegMB[(i+20)+3]=HDLC_to_MB_i64.u16[ i ];
     }
     
   }
