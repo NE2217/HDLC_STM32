@@ -79,7 +79,9 @@ float Rep_cos_f;
 int64_t Rep_activ_energy_import;
 int64_t Rep_reactiv_energy_import;
 int64_t Rep_apparent_energy_import;
-
+//-----------------------------------Test----------------------------------------
+bool Authorization_faild = false;
+//--------------------------------------------------------------------------------
 void* Rep_Points[] = {&Rep_current_A, &Rep_current_B, &Rep_current_C, &Rep_volt_A, &Rep_volt_B, 
                       &Rep_volt_C, &Rep_sum_Q, &Rep_sum_P, &Rep_sum_S, &Rep_cos_f, &Rep_activ_energy_import, 
                       &Rep_reactiv_energy_import, &Rep_apparent_energy_import};
@@ -198,8 +200,10 @@ void HDLC_ProtocolMain(void)
    switch(Status)
     {
       case NONE:
+        HDLC_PackAdr(2544, 0x20);
+        HDLC_UnPackAdr(2544, 0x20);
         Autorization_status = SEND_1;
-      Status = SEND_CONFIG_PARAM;//FIRST_AUTHORIZATION;
+        Status = SEND_CONFIG_PARAM;//FIRST_AUTHORIZATION;
         TimeOutReset();
         break;
 /*
@@ -240,10 +244,12 @@ void HDLC_ProtocolMain(void)
       case WAIT_CONFIG_PARAM_ANSWER:
         if(HDLC_UnpackWaitConfigParam(HDLC_GetBuf, GET_BUF_SIZE) == 0)
         {
-          Status = SEND_AUTHORIZATION;//FIRST_AUTHORIZATION;---------------------------------------!
+          Status = SEND_AUTHORIZATION;//SEND_COMAND;---------------------------------------!
           BufReset();
           WaitingForResponse = false;
         }
+        else
+          Status = NONE;
         break;
       case SEND_AUTHORIZATION:
         HDLC_PackSendAuthorization(Parameters.uartSendDataCB);
@@ -258,6 +264,7 @@ void HDLC_ProtocolMain(void)
           BufReset();
           WaitingForResponse = false;
         }
+        else Authorization_faild = true;
         break;
       case SEND_COMAND:
         Param_pos = HDLC_PackSendComand(NRS++,Parameters.uartSendDataCB);

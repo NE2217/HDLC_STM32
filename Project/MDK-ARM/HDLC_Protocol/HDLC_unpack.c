@@ -16,6 +16,13 @@ typedef struct
   uint8_t type;
   uint8_t value;
 }t_answer;
+
+typedef struct
+{
+  uint8_t MAC_start [11];
+  uint8_t res[19];
+  uint8_t result_connect;
+}t_authorization_answer;
 //--------------------------------------------------------------------------------
 uint8_t response_connect[] = { 0x7E, 0xA0, 0x23, 0x41, 0x00, 0x02, 0x44, 0xC9, 0x73, 0xB9, 0x33, 0x81, 0x80, 0x14, 0x05, 0x02,
   0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
@@ -25,11 +32,19 @@ uint8_t response_authorize[] = { 0x7E, 0xA0, 0x3A, 0x41, 0x00, 0x02, 0x44, 0xC9,
   0xA1, 0x09, 0x06, 0x07, 0x60, 0x85, 0x74, 0x05, 0x08, 0x01, 0x01, 0xA2, 0x03, 0x02, 0x01, 0x00,
   0xA3, 0x05, 0xA1, 0x03, 0x02, 0x01, 0x00, 0xBE, 0x10, 0x04, 0x0E, 0x08, 0x00, 0x06, 0x5F, 0x1F,
   0x04, 0x00, 0x00, 0x10, 0x15, 0x04, 0x00, 0x00, 0x07, 0x62, 0xC5, 0x7E };
-
+uint8_t DA_SA_response[] = {0x41, 0x00, 0x02, 0x44, 0xC9};
 //--------------------------------------------------------------------------------
 uint8_t HDLC_UnpackWaitConfigParam(uint8_t* data, uint16_t len)
 {
+  t_HDLC_packet_begin* pack_begin = (t_HDLC_packet_begin*) data;
+  
+  /*
   if( memcmp(data, response_connect, sizeof(response_connect)) == 0 )
+  {
+    return 0;
+  }
+  */
+  if (memcmp(pack_begin->DA_SA, DA_SA_response, sizeof(DA_SA_response)) == 0)
   {
     return 0;
   }
@@ -38,11 +53,15 @@ uint8_t HDLC_UnpackWaitConfigParam(uint8_t* data, uint16_t len)
 //--------------------------------------------------------------------------------
 uint8_t HDLC_UnpackWaitAuthorization(uint8_t* data, uint16_t len)
 {
+  /*
   if( memcmp(data, response_authorize, sizeof(response_authorize)) == 0 )
   {
     return 0;
   }
-
+  */
+  t_authorization_answer* pack = (t_authorization_answer*) data;
+  if (pack->result_connect == 1)
+    return 0;
   return 1;
 }
 //--------------------------------------------------------------------------------
@@ -77,4 +96,14 @@ uint8_t HDLC_UnpackComand(void* Param, uint8_t* data, uint16_t len)
     *Par = *( (int64_t*) rev );
   }
   return 0;
+}
+
+void HDLC_UnPackAdr(uint16_t meter_adr, uint8_t client_adr)
+{
+  if ( (meter_adr > 0x3FFF) || (client_adr > 0x7F) )
+    return;
+  DA_SA_response[3] = (meter_adr >> 7)<<1;
+  DA_SA_response[4] = ( (meter_adr & 0x7f)<<1 )|1;
+  
+  DA_SA_response[0] = (client_adr << 1)|1;
 }

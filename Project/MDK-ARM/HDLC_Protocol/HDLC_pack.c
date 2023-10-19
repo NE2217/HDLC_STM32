@@ -11,7 +11,9 @@
 #define LEN_DATA_REQUEST         16
 #define NUMBER_OF_PARAMETERS     13
 #define LOCAL_BUF_LEN           100
-#define DEFAULT_PASWOR   "12345678"
+#define DEFAULT_PASWOR   "12345670"
+#define SNRM                   0x93//режим нормального ответа
+#define UA                     0x73//подтверждение
 //--------------------------------------------------------------------------------
 #pragma pack(push,1)
 typedef enum {
@@ -38,15 +40,16 @@ typedef union {
     unsigned NS:3;
   }Is;
 } t_control_comand;
-
+/*
 typedef struct {
   uint8_t A;
   uint8_t B;
 }t_AB_test;
+*/
 typedef struct {
-  uint8_t start[44];
+  uint8_t start[33];
   uint8_t password[8];
-  uint8_t end[21];
+  uint8_t end[18];
 }t_pac_password;
 
 #pragma pack(pop)
@@ -71,10 +74,15 @@ static const uint8_t* Send_comands_points[] = {Send_current_A, Send_current_B, S
                                                Send_reactiv_energy_import, Send_apparent_energy_import};
 uint8_t PosParam=0;
 // TODO задефайнить адреса
-static uint8_t DA_SA[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
+uint8_t DA_SA_request[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
+/*
   uint8_t request_connect[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
   0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
   0x00, 0x01, 0x72, 0xE3, 0x7E };
+*/
+  uint8_t request_connect_LLC[] = { 0x81, 0x80, 0x14, 0x05, 0x02,
+  0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
+  0x00, 0x01 };
 
   uint8_t request_authorize[] = { 0x7E, 0xA0, 0x47, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x10, 0x17, 0x55, 0xE6, 0xE6, 0x00, 0x60, 0x36,
   0xA1, 0x09, 0x06, 0x07, 0x60, 0x85, 0x74, 0x05, 0x08, 0x01, 0x01, 0x8A, 0x02, 0x07, 0x80, 0x8B,
@@ -89,12 +97,42 @@ static uint8_t DA_SA[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
   uint8_t request_authorize_end[] = { 0xBE, 0x10, 0x04, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x06,
   0x5F, 0x1F, 0x04, 0x00, 0xFF, 0xFF, 0xFF, 0x08, 0x00, 0xD5, 0x24, 0x7E };
 
+  uint8_t request_authorize_start_LLC[] = { 0xE6, 0xE6, 0x00, 0x60, 0x36,
+  0xA1, 0x09, 0x06, 0x07, 0x60, 0x85, 0x74, 0x05, 0x08, 0x01, 0x01, 0x8A, 0x02, 0x07, 0x80, 0x8B,
+  0x07, 0x60, 0x85, 0x74, 0x05, 0x08, 0x02, 0x01, 0xAC, 0x0A, 0x80, 0x08 };
+  uint8_t request_authorize_password_LLC[] = DEFAULT_PASWOR;
+  uint8_t request_authorize_end_LLC[] = { 0xBE, 0x10, 0x04, 0x0E, 0x01, 0x00, 0x00, 0x00, 0x06,
+  0x5F, 0x1F, 0x04, 0x00, 0xFF, 0xFF, 0xFF, 0x08, 0x00 };
+
 uint8_t LocalBuf[LOCAL_BUF_LEN] = {0};
 //--------------------------------------------------------------------------------
 
 uint8_t HDLC_PackSendConfigParam(void (*uartSendDataCB)(uint8_t *data, uint16_t len))
 {
-  uartSendDataCB(request_connect, sizeof(request_connect));
+  uint16_t pack_size = sizeof(request_connect_LLC) + CONTROL_FIELDS_SIZE;
+  t_HDLC_packet p_pack;
+
+  p_pack.begin = (t_HDLC_packet_begin*)LocalBuf;
+  p_pack.end = (t_HDLC_packet_end*) (&LocalBuf[ pack_size - sizeof(t_HDLC_packet_end) ]);
+
+  p_pack.begin->flag_open = FLAG;
+
+  p_pack.begin->format.form.typ  = FORMAT_TYPE;
+  p_pack.begin->format.form.S    = FORMAT_S;
+  p_pack.begin->format.form.size = pack_size-2;
+  p_pack.begin->format.point     = swap((uint8_t*)&p_pack.begin->format.point, 2);
+
+  memcpy(p_pack.begin->DA_SA, DA_SA_request, sizeof(DA_SA_request));
+  p_pack.begin->control  = SNRM;
+  p_pack.begin->HCS      = f_crc16( ( (uint8_t*) &p_pack.begin->format.point ), HEADER_LEN );
+
+  memcpy((uint8_t*)&p_pack.begin->data, request_connect_LLC, sizeof(request_connect_LLC));
+  p_pack.end->FCS        = f_crc16(((uint8_t*)&p_pack.begin->format.point), pack_size - 4);
+  p_pack.end->flag_close = FLAG;
+
+  uartSendDataCB(LocalBuf, pack_size);
+  
+  //uartSendDataCB(request_connect, sizeof(request_connect));
 // TODO  TimeOutReset();
 // TODO  WaitingForResponse = true;
   return 0;
@@ -104,11 +142,40 @@ uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_
 {
   t_pac_password request_authorize_p;
 
-  memcpy(request_authorize_p.start, request_authorize_start, sizeof(request_authorize_start));
-  memcpy(request_authorize_p.password, request_authorize_password, sizeof(request_authorize_password));
-  memcpy(request_authorize_p.end, request_authorize_end, sizeof(request_authorize_end));
+  memcpy(request_authorize_p.start, request_authorize_start_LLC, sizeof(request_authorize_start_LLC));
+  memcpy(request_authorize_p.password, request_authorize_password_LLC, sizeof(request_authorize_password_LLC));
+  memcpy(request_authorize_p.end, request_authorize_end_LLC, sizeof(request_authorize_end_LLC));
+//---
+  t_control_comand control;
+  control.Is.NR = 0;//N;
+  control.Is.PS = 1;
+  control.Is.NS = 0;//N;
+  control.Is.I =  0;
+  
+  uint16_t pack_size = 59/*sizeof(request_authorize_p)*/ + CONTROL_FIELDS_SIZE;
+  t_HDLC_packet p_pack;
 
-  uartSendDataCB(request_authorize_p.start, sizeof(t_pac_password));
+  p_pack.begin = (t_HDLC_packet_begin*)LocalBuf;
+  p_pack.end = (t_HDLC_packet_end*) (&LocalBuf[ pack_size - sizeof(t_HDLC_packet_end) ]);
+
+  p_pack.begin->flag_open = FLAG;
+
+  p_pack.begin->format.form.typ  = FORMAT_TYPE;
+  p_pack.begin->format.form.S    = FORMAT_S;
+  p_pack.begin->format.form.size = pack_size-2;
+  p_pack.begin->format.point     = swap((uint8_t*)&p_pack.begin->format.point, 2);
+
+  memcpy(p_pack.begin->DA_SA, DA_SA_request, sizeof(DA_SA_request));
+  p_pack.begin->control  = control.point;
+  p_pack.begin->HCS      = f_crc16( ( (uint8_t*) &p_pack.begin->format.point ), HEADER_LEN );
+
+  memcpy((uint8_t*)&p_pack.begin->data, request_authorize_p.start, 59/*sizeof(request_authorize_p)*/);
+  p_pack.end->FCS        = f_crc16(((uint8_t*)&p_pack.begin->format.point), pack_size - 4);
+  p_pack.end->flag_close = FLAG;
+//---
+  uartSendDataCB(LocalBuf, pack_size);
+  
+  //uartSendDataCB(request_authorize_p.start, sizeof(t_pac_password));
   return 0;
 }
 //--------------------------------------------------------------------------------
@@ -140,7 +207,7 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
   p_pack.begin->format.form.size = LEN_DATA_REQUEST + CONTROL_FIELDS_SIZE-2;
   p_pack.begin->format.point     = swap((uint8_t*)&p_pack.begin->format.point, 2);
 
-  memcpy(p_pack.begin->DA_SA, DA_SA, sizeof(DA_SA));
+  memcpy(p_pack.begin->DA_SA, DA_SA_request, sizeof(DA_SA_request));
   p_pack.begin->control  = control.point;
   p_pack.begin->HCS      = f_crc16( ( (uint8_t*) &p_pack.begin->format.point ), HEADER_LEN );
 
@@ -151,4 +218,14 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
   uartSendDataCB(LocalBuf, pack_size);
 
   return PosParam++;
+}
+
+void HDLC_PackAdr(uint16_t meter_adr, uint8_t client_adr)
+{
+  if ( (meter_adr > 0x3FFF) || (client_adr > 0x7F) )
+    return;
+  DA_SA_request[2] = (meter_adr >> 7)<<1;
+  DA_SA_request[3] = ( (meter_adr & 0x7f)<<1 )|1;
+  
+  DA_SA_request[4] = (client_adr << 1)|1;
 }
