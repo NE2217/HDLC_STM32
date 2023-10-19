@@ -58,6 +58,25 @@ typedef union
   int64_t i64[3];
   uint16_t u16[12];
 }t_typeI64Convert;
+
+typedef struct
+{
+  float CurrentA;
+  float CurrentB;
+  float CurrentC;
+  float VoltageA;
+  float VoltageB;
+  float VoltageC;
+  float SumPowerReactive;
+  float SumPowerActive;
+  float SumPowerApparent;
+  float CosFi;
+
+  int64_t EnergyActiveImport;
+  int64_t EnergyReactiveImport;
+  int64_t EnergyApparentImport;
+}t_MB_Holding_registers;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -160,6 +179,18 @@ void UartSendDataMB(uint8_t *data, uint16_t len)
   HAL_UART_Transmit_DMA(&huart2, Tx_buf_MB, len);
   return;
 }
+
+void f_invertTwoWords(void* data)
+{
+  uint32_t* buf = (uint32_t* ) data;
+  *buf = ( (*buf >> 16) | (*buf << 16) );
+}
+
+void f_invertFourWords(void* data)
+{
+  uint64_t* buf = (uint64_t* ) data;
+  *buf = (*buf >> 48) | ( (*buf >> 16) & 0xffff0000 ) | ( (*buf << 16) & 0xffff00000000 ) | (*buf << 48);
+}
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
@@ -172,6 +203,7 @@ void UartSendDataMB(uint8_t *data, uint16_t len)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+  t_MB_Holding_registers HDLC_to_MB;
   t_typeflConvert HDLC_to_MB_fl;
   t_typeI64Convert HDLC_to_MB_i64;
 
@@ -222,7 +254,7 @@ int main(void)
   initMB.stationId = 1;
   initMB._GetTicks100Mks = HAL_GetTick;
   initMB._sendByte = UartSendDataMB;
-  initMB.HoldingRegistersPtr = SendRegMB;
+  initMB.HoldingRegistersPtr = (uint16_t*)&HDLC_to_MB;//SendRegMB;
   initMB.HoldingRegistersSize = 36;
   
   ModBusInit(&initMB);
@@ -238,6 +270,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    /*
     HDLC_to_MB_fl.fl[0]=GetCurrentA();
     HDLC_to_MB_fl.fl[1]=GetCurrentB();
     HDLC_to_MB_fl.fl[2]=GetCurrentC();
@@ -252,6 +285,23 @@ int main(void)
     HDLC_to_MB_i64.i64[0] = GetEnergyActiveImport();
     HDLC_to_MB_i64.i64[1] = GetEnergyReactiveImport();
     HDLC_to_MB_i64.i64[2] = GetEnergyApparentImport();
+    */
+    float temp = GetVoltageC();
+    //invertWords(&temp,2);
+    HDLC_to_MB.CurrentA=GetCurrentA();
+    HDLC_to_MB.CurrentB=GetCurrentB();
+    HDLC_to_MB.CurrentC=GetCurrentC();
+    HDLC_to_MB.VoltageA=GetVoltageA();
+    HDLC_to_MB.VoltageB=GetVoltageB();
+    HDLC_to_MB.VoltageC=GetVoltageC();
+    HDLC_to_MB.SumPowerReactive=GetSumPowerReactive();
+    HDLC_to_MB.SumPowerActive=GetSumPowerActive();
+    HDLC_to_MB.SumPowerApparent=GetSumPowerApparent();
+    HDLC_to_MB.CosFi=GetCosFi();
+    
+    HDLC_to_MB.EnergyActiveImport = GetEnergyActiveImport();
+    HDLC_to_MB.EnergyReactiveImport = GetEnergyReactiveImport();
+    HDLC_to_MB.EnergyApparentImport = GetEnergyApparentImport();
     
     for(int i=0; i+1<20; i+=2)
     {
