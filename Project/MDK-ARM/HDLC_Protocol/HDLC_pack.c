@@ -9,11 +9,10 @@
 #define FLAG                   0x7e
 #define CONTROL_FIELDS_SIZE      14
 #define LEN_DATA_REQUEST         16
-#define NUMBER_OF_PARAMETERS     13
 #define LOCAL_BUF_LEN           100
 #define DEFAULT_PASWOR   "12345670"
-#define SNRM                   0x93//режим нормального ответа
-#define UA                     0x73//подтверждение
+//#define SNRM                   0x93//режим нормального ответа
+//#define UA                     0x73//подтверждение
 //--------------------------------------------------------------------------------
 #pragma pack(push,1)
 typedef enum {
@@ -75,11 +74,7 @@ static const uint8_t* Send_comands_points[] = {Send_current_A, Send_current_B, S
 uint8_t PosParam=0;
 // TODO задефайнить адреса
 uint8_t DA_SA_request[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
-/*
-  uint8_t request_connect[] = { 0x7E, 0xA0, 0x23, 0x00, 0x02, 0x44, 0xC9, 0x41, 0x93, 0x77, 0x28, 0x81, 0x80, 0x14, 0x05, 0x02,
-  0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
-  0x00, 0x01, 0x72, 0xE3, 0x7E };
-*/
+
   uint8_t request_connect_LLC[] = { 0x81, 0x80, 0x14, 0x05, 0x02,
   0x04, 0x00, 0x06, 0x02, 0x04, 0x00, 0x07, 0x04, 0x00, 0x00, 0x00, 0x01, 0x08, 0x04, 0x00, 0x00,
   0x00, 0x01 };
@@ -123,7 +118,7 @@ uint8_t HDLC_PackSendConfigParam(void (*uartSendDataCB)(uint8_t *data, uint16_t 
   p_pack.begin->format.point     = swap((uint8_t*)&p_pack.begin->format.point, 2);
 
   memcpy(p_pack.begin->DA_SA, DA_SA_request, sizeof(DA_SA_request));
-  p_pack.begin->control  = SNRM;
+  p_pack.begin->control  = SNRM|(1 << 4);
   p_pack.begin->HCS      = f_crc16( ( (uint8_t*) &p_pack.begin->format.point ), HEADER_LEN );
 
   memcpy((uint8_t*)&p_pack.begin->data, request_connect_LLC, sizeof(request_connect_LLC));
@@ -138,7 +133,7 @@ uint8_t HDLC_PackSendConfigParam(void (*uartSendDataCB)(uint8_t *data, uint16_t 
   return 0;
 }
 
-uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_t len))
+uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_t len), uint8_t N)
 {
   t_pac_password request_authorize_p;
 
@@ -147,9 +142,9 @@ uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_
   memcpy(request_authorize_p.end, request_authorize_end_LLC, sizeof(request_authorize_end_LLC));
 //---
   t_control_comand control;
-  control.Is.NR = 0;//N;
+  control.Is.NR = N;
   control.Is.PS = 1;
-  control.Is.NS = 0;//N;
+  control.Is.NS = N;
   control.Is.I =  0;
   
   uint16_t pack_size = 59/*sizeof(request_authorize_p)*/ + CONTROL_FIELDS_SIZE;
@@ -180,7 +175,7 @@ uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_
 }
 //--------------------------------------------------------------------------------
 
-uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint16_t len))
+uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint16_t len), uint8_t PosParam)
 {
   uint16_t pack_size = LEN_DATA_REQUEST + CONTROL_FIELDS_SIZE;
   t_control_comand control;
@@ -189,8 +184,6 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
   control.Is.NS = N;
   control.Is.I =  0;
 
-  if( PosParam >= NUMBER_OF_PARAMETERS )
-    PosParam = 0;
 /*
   if (*pack_size > len)
     return 1;//предоставленно недостаточно места
@@ -217,7 +210,7 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
 
   uartSendDataCB(LocalBuf, pack_size);
 
-  return PosParam++;
+  return 0;
 }
 
 void HDLC_PackAdr(uint16_t meter_adr, uint8_t client_adr)
