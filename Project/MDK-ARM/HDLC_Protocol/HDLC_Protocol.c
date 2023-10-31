@@ -5,12 +5,12 @@
 #include "HDLC_unpack.h"
 #include "HDLC_pack.h"
 
-#define POLLING_TIME             500u
+#define POLLING_TIME             100u
 #define TIMEOUT                  2000u
 #define SEND_BUF_SIZE            100u
 #define GET_BUF_SIZE             100u
 #define SEND_AUTHORIZATION_SIZE  100u
-#define NUMBER_OF_PARAMETERS     12
+#define NUMBER_OF_PARAMETERS     13
 
 typedef enum
 {
@@ -22,8 +22,10 @@ typedef enum
   WAIT_AUTHORIZATION_ANSWER,
   SEND_COMAND,
   WAIT_COMAND_ANSWER,
+  SEND_DISCONNECT,
+  WAIT_DISCONNECT_ANSWER
 } t_protocol_status;
-
+/*
 typedef enum 
 {
   SEND_1 = 0,
@@ -38,7 +40,7 @@ typedef enum
   GET_5,
   AUTHORIZATION_COMPLETED
 } t_HDLC_Autorization_status;
-
+*/
 typedef enum
 {
   BUFF_IS_EMPTY = 0,
@@ -63,7 +65,7 @@ uint32_t StartTimeoutCounter;
 
 t_GetBuf_status BufStat;
 t_protocol_status Status;
-t_HDLC_Autorization_status Autorization_status;
+//t_HDLC_Autorization_status Autorization_status;
 t_InitParams Parameters;
 //--------------------------------------------------------------------------------
 float Rep_current_A;
@@ -84,7 +86,7 @@ int64_t Rep_apparent_energy_import;
 //--------------------------------------------------------------------------------
 void* Rep_Points[] = {&Rep_current_A, &Rep_current_B, &Rep_current_C, &Rep_volt_A, &Rep_volt_B, 
                       &Rep_volt_C, &Rep_sum_Q, &Rep_sum_P, &Rep_sum_S, &Rep_cos_f, &Rep_activ_energy_import, 
-                      &Rep_reactiv_energy_import, /*&Rep_apparent_energy_import*/};
+                      &Rep_reactiv_energy_import, &Rep_apparent_energy_import};
 uint8_t Param_pos = 0;
 //--------------------------------------------------------------------------------
 uint8_t NRS=0; 
@@ -134,7 +136,7 @@ void HDLC_ProtocolMain(void)
   if( IsTimeOut() )
   {
     TimeOutReset();
-    Status = NONE;
+    Status = SEND_DISCONNECT;
     WaitingForResponse = false;
     NRS = 0;
     Param_pos = 0;
@@ -148,7 +150,7 @@ void HDLC_ProtocolMain(void)
       case NONE:
         HDLC_PackAdr(2544, 0x20);
         HDLC_UnPackAdr(2544, 0x20);
-        Autorization_status = SEND_1;
+//        Autorization_status = SEND_1;
         Status = SEND_CONFIG_PARAM;
         TimeOutReset();
         break;
@@ -197,6 +199,18 @@ void HDLC_ProtocolMain(void)
         BufReset();
         if(Param_pos > NUMBER_OF_PARAMETERS-1) Param_pos=0;
         break;
+      case SEND_DISCONNECT:
+        HDLC_PackDisconnect(Parameters.uartSendDataCB);
+        Status = WAIT_DISCONNECT_ANSWER;
+        TimeOutReset();
+        WaitingForResponse = true;
+        break;
+      case WAIT_DISCONNECT_ANSWER:
+        HDLC_UnpackDisconnect(HDLC_GetBuf, GET_BUF_SIZE);
+        Status = NONE;
+        WaitingForResponse = false;
+        BufReset();
+        break;
       default:
         break;
     }
@@ -226,7 +240,7 @@ void HDLC_ProtocolInit(t_InitParams *init)
   memcpy(&Parameters, init, sizeof(t_InitParams));
   LocalTime = Parameters.getTicksCB();
   memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
-  Autorization_status = SEND_1;
+//  Autorization_status = SEND_1;
   
   Parameters.max_cadr_reception_data = DEFAULT_MAX_CADR_RECEPTION_DATA;
   Parameters.max_cadr_transmission_data = DEFAULT_MAX_CADR_TRANSMISSION_DATA;

@@ -77,7 +77,7 @@ uint8_t HDLC_UnpackComand(void* Param, uint8_t* pack, uint16_t len)
   uint16_t data_len;
   MAC_ERROR = f_MAC_unpack(&control, &inf, &data_len, pack, len);
   t_answer* data = (t_answer*)inf;
-  
+
   if (data->type == FLOAT)
   {
     uint8_t rev[4] = {0};
@@ -257,3 +257,9 @@ uint8_t f_MAC_unpack(t_cont* control_LLC, uint8_t** data, uint16_t* data_len, ui
 return 111;
 }
 //--------------------------------------------------------------------------------
+uint8_t HDLC_UnpackDisconnect (uint8_t* data, uint16_t len)
+{
+  ;
+  return 0;
+}
+//----------------------------------------------------------------

@@ -7,12 +7,11 @@
 #include "CRC.h"
 //--------------------------------------------------------------------------------
 #define FLAG                   0x7e
+#define FCS_SIZE                  2
 #define CONTROL_FIELDS_SIZE      14
 #define LEN_DATA_REQUEST         16
 #define LOCAL_BUF_LEN           100
 #define DEFAULT_PASWOR   "12345670"
-//#define SNRM                   0x93//режим нормального ответа
-//#define UA                     0x73//подтверждение
 //--------------------------------------------------------------------------------
 #pragma pack(push,1)
 typedef enum {
@@ -100,6 +99,7 @@ uint8_t DA_SA_request[] = { 0x00, 0x02, 0x44, 0xC9, 0x41 };
   0x5F, 0x1F, 0x04, 0x00, 0xFF, 0xFF, 0xFF, 0x08, 0x00 };
 
 uint8_t LocalBuf[LOCAL_BUF_LEN] = {0};
+
 //--------------------------------------------------------------------------------
 
 uint8_t HDLC_PackSendConfigParam(void (*uartSendDataCB)(uint8_t *data, uint16_t len))
@@ -147,7 +147,7 @@ uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_
   control.Is.NS = N;
   control.Is.I =  0;
   
-  uint16_t pack_size = 59/*sizeof(request_authorize_p)*/ + CONTROL_FIELDS_SIZE;
+  uint16_t pack_size = sizeof(request_authorize_p)/*59*/ + CONTROL_FIELDS_SIZE;
   t_HDLC_packet p_pack;
 
   p_pack.begin = (t_HDLC_packet_begin*)LocalBuf;
@@ -164,13 +164,12 @@ uint8_t HDLC_PackSendAuthorization(void (*uartSendDataCB)(uint8_t *data, uint16_
   p_pack.begin->control  = control.point;
   p_pack.begin->HCS      = f_crc16( ( (uint8_t*) &p_pack.begin->format.point ), HEADER_LEN );
 
-  memcpy((uint8_t*)&p_pack.begin->data, request_authorize_p.start, 59/*sizeof(request_authorize_p)*/);
+  memcpy((uint8_t*)&p_pack.begin->data, request_authorize_p.start, sizeof(request_authorize_p));
   p_pack.end->FCS        = f_crc16(((uint8_t*)&p_pack.begin->format.point), pack_size - 4);
   p_pack.end->flag_close = FLAG;
 //---
   uartSendDataCB(LocalBuf, pack_size);
-  
-  //uartSendDataCB(request_authorize_p.start, sizeof(t_pac_password));
+
   return 0;
 }
 //--------------------------------------------------------------------------------
@@ -197,7 +196,7 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
 
   p_pack.begin->format.form.typ  = FORMAT_TYPE;
   p_pack.begin->format.form.S    = FORMAT_S;
-  p_pack.begin->format.form.size = LEN_DATA_REQUEST + CONTROL_FIELDS_SIZE-2;
+  p_pack.begin->format.form.size = pack_size-2;
   p_pack.begin->format.point     = swap((uint8_t*)&p_pack.begin->format.point, 2);
 
   memcpy(p_pack.begin->DA_SA, DA_SA_request, sizeof(DA_SA_request));
@@ -212,7 +211,34 @@ uint8_t HDLC_PackSendComand(uint8_t N,void (*uartSendDataCB)(uint8_t *data, uint
 
   return 0;
 }
+//----------------------------------------------------------------
+uint8_t HDLC_PackDisconnect (void (*uartSendDataCB)(uint8_t *data, uint16_t len))
+{
+  uint16_t pack_size = CONTROL_FIELDS_SIZE - FCS_SIZE;
 
+  t_HDLC_packet p_pack;
+
+  p_pack.begin = (t_HDLC_packet_begin*)LocalBuf;
+  p_pack.end = (t_HDLC_packet_end*) (&LocalBuf[ pack_size - sizeof(t_HDLC_packet_end) ]);
+
+  p_pack.begin->flag_open = FLAG;
+
+  p_pack.begin->format.form.typ  = FORMAT_TYPE;
+  p_pack.begin->format.form.S    = FORMAT_S;
+  p_pack.begin->format.form.size = pack_size - 2;
+  p_pack.begin->format.point     = swap((uint8_t*)&p_pack.begin->format.point, 2);
+
+  memcpy(p_pack.begin->DA_SA, DA_SA_request, sizeof(DA_SA_request));
+  p_pack.begin->control  = DISC|(1<<4);
+  p_pack.begin->HCS      = f_crc16( ( (uint8_t*) &p_pack.begin->format.point ), HEADER_LEN );
+
+  p_pack.begin->data = FLAG;
+
+  uartSendDataCB(LocalBuf, pack_size);
+
+  return 0;
+}
+//----------------------------------------------------------------
 void HDLC_PackAdr(uint16_t meter_adr, uint8_t client_adr)
 {
   if ( (meter_adr > 0x3FFF) || (client_adr > 0x7F) )
