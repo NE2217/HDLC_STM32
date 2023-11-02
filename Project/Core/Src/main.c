@@ -26,6 +26,7 @@
 #include "HDLC_Protocol.h"
 #include "ModBusSlave.h"
 #include <stdlib.h>
+#include "eeprom.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -37,7 +38,6 @@
 /* USER CODE BEGIN PD */
 #define BUF_LEN           100u
 #define TIME_SLEAP        500u    //ms
-#define TIMEOUT            10u    //ms
 //#define READY_TO_TRANSMIT 1
 typedef enum
 {
@@ -76,7 +76,20 @@ typedef struct
   int64_t EnergyReactiveImport;
   int64_t EnergyApparentImport;
 }t_MB_Holding_registers;
+//---------------------------------ServConfig-----------------------------------------------
 
+typedef struct
+{
+  uint16_t NumServ;
+  uint16_t ServAdr_1;
+  uint16_t ServPasword_1[4];
+  uint16_t ServAdr_2;
+  uint16_t ServPasword_2[4];
+  uint16_t ServAdr_3;
+  uint16_t ServPasword_3[4];
+  uint16_t ServAdr_4;
+  uint16_t ServPasword_4[4];
+}t_MB_Preset_Registers;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -105,6 +118,11 @@ uint8_t Rxel_MB = 0;
 uint8_t Txel_MB = 0;
 uint16_t SendRegMB [100] = {0};
 int64_t TES = 0;
+//-----------------------------TEST_VARIABLES-------------------------------------
+uint16_t Test_1=0;
+uint16_t Test_2=0;
+uint32_t readData[2] = {0, 0};
+//--------------------------------------------------------------------------------
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -121,9 +139,16 @@ static void MX_USART2_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // ----------------------------------------------------------------------------
+  void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+  {
+        if(htim->Instance == TIM1)
+        {
+                HAL_GPIO_TogglePin(LED_PIN_GPIO_Port, LED_PIN_Pin); 
+        }
+  }
+// ----------------------------------------------------------------------------
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-
   if(huart == &huart3)
   {
 
@@ -192,7 +217,7 @@ void f_invertFourWords(void* data)
   *buf = (*buf >> 48) | ( (*buf >> 16) & 0xffff0000 ) | ( (*buf << 16) & 0xffff00000000 ) | (*buf << 48);
 }
 // ----------------------------------------------------------------------------
-
+  t_MB_Preset_Registers HDLC_to_MB_Preset;
 // ----------------------------------------------------------------------------
 /* USER CODE END 0 */
 
@@ -203,9 +228,10 @@ void f_invertFourWords(void* data)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  t_MB_Holding_registers HDLC_to_MB;
+  t_MB_Holding_registers HDLC_to_MB_Holding;
   t_typeflConvert HDLC_to_MB_fl;
   t_typeI64Convert HDLC_to_MB_i64;
+
 
   /* USER CODE END 1 */
 
@@ -236,29 +262,44 @@ int main(void)
   
   HAL_UART_Receive_IT(&huart3, Rx_buf_HDLC, 1);
   HAL_UART_Receive_IT(&huart2, Rx_buf_MB, 1);
-
+  
   t_InitParams initHDLC;
   t_modbus_init_struct initMB;
-
+//------------------------------------HDLC_INIT------------------------------------
   HDLC_ProtocolInitParamsStructureReset(&initHDLC);
 
-  initHDLC.server_address = DEFAULT_SERVER_ADDRESS;
+  initHDLC.server_address = DEFAULT_SERVER_ADDRESS;//HDLC_to_MB_Preset.ServAdr_1;
   initHDLC.client_address = DEFAULT_CLIENT_ADDRESS;
-  memcpy(initHDLC.pasword, DEFAULT_PASWORD, 8);
+  memcpy(initHDLC.pasword, (uint8_t*)HDLC_to_MB_Preset.ServPasword_1, 8);
 
   initHDLC.uartSendDataCB = UartSendDataHDLC;
   initHDLC.getTicksCB = HAL_GetTick;
 
   HDLC_ProtocolInit(&initHDLC);
-//--------------------------------------MB----------------------------------------
+//---------------------------------------MB_INIT-----------------------------------
   initMB.stationId = 1;
   initMB._GetTicks100Mks = HAL_GetTick;
   initMB._sendByte = UartSendDataMB;
-  initMB.HoldingRegistersPtr = (uint16_t*)&HDLC_to_MB;//SendRegMB;
-  initMB.HoldingRegistersSize = 36;
+  initMB.HoldingRegistersPtr = (uint16_t*)&HDLC_to_MB_Holding;//SendRegMB;
+  initMB.HoldingRegistersSize = 32;
+
+  initMB.PresetRegistersPtr = (uint16_t*)&HDLC_to_MB_Preset;
+  initMB.PresetRegistersSize = 21;
   
   ModBusInit(&initMB);
+//--------------------------------------EEPROM_INIT--------------------------------
+  EEPROM_Init();
   
+//  EEPROM_Write(PARAM_1, 0x1111);
+//  EEPROM_Write(PARAM_2, 0x2222);
+
+  EEPROM_Read(PARAM_1, &readData[0]);
+  EEPROM_Read(PARAM_2, &readData[1]);
+  
+//  EEPROM_Write(PARAM_2, 0x3333);
+//  EEPROM_Read(PARAM_1, &readData[0]);
+//  EEPROM_Read(PARAM_2, &readData[1]);
+//--------------------------------------------------------------------------------
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -270,38 +311,22 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    /*
-    HDLC_to_MB_fl.fl[0]=GetCurrentA();
-    HDLC_to_MB_fl.fl[1]=GetCurrentB();
-    HDLC_to_MB_fl.fl[2]=GetCurrentC();
-    HDLC_to_MB_fl.fl[3]=GetVoltageA();
-    HDLC_to_MB_fl.fl[4]=GetVoltageB();
-    HDLC_to_MB_fl.fl[5]=GetVoltageC();
-    HDLC_to_MB_fl.fl[6]=GetSumPowerReactive();
-    HDLC_to_MB_fl.fl[7]=GetSumPowerActive();
-    HDLC_to_MB_fl.fl[8]=GetSumPowerApparent();
-    HDLC_to_MB_fl.fl[9]=GetCosFi();
-    
-    HDLC_to_MB_i64.i64[0] = GetEnergyActiveImport();
-    HDLC_to_MB_i64.i64[1] = GetEnergyReactiveImport();
-    HDLC_to_MB_i64.i64[2] = GetEnergyApparentImport();
-    */
-    float temp = GetVoltageC();
+//    float temp = GetVoltageC();
     //invertWords(&temp,2);
-    HDLC_to_MB.CurrentA=GetCurrentA();
-    HDLC_to_MB.CurrentB=GetCurrentB();
-    HDLC_to_MB.CurrentC=GetCurrentC();
-    HDLC_to_MB.VoltageA=GetVoltageA();
-    HDLC_to_MB.VoltageB=GetVoltageB();
-    HDLC_to_MB.VoltageC=GetVoltageC();
-    HDLC_to_MB.SumPowerReactive=GetSumPowerReactive();
-    HDLC_to_MB.SumPowerActive=GetSumPowerActive();
-    HDLC_to_MB.SumPowerApparent=GetSumPowerApparent();
-    HDLC_to_MB.CosFi=GetCosFi();
-    
-    HDLC_to_MB.EnergyActiveImport = GetEnergyActiveImport();
-    HDLC_to_MB.EnergyReactiveImport = GetEnergyReactiveImport();
-    HDLC_to_MB.EnergyApparentImport = GetEnergyApparentImport();
+    HDLC_to_MB_Holding.CurrentA=GetCurrentA();
+    HDLC_to_MB_Holding.CurrentB=GetCurrentB();
+    HDLC_to_MB_Holding.CurrentC=GetCurrentC();
+    HDLC_to_MB_Holding.VoltageA=GetVoltageA();
+    HDLC_to_MB_Holding.VoltageB=GetVoltageB();
+    HDLC_to_MB_Holding.VoltageC=GetVoltageC();
+    HDLC_to_MB_Holding.SumPowerReactive=GetSumPowerReactive();
+    HDLC_to_MB_Holding.SumPowerActive=GetSumPowerActive();
+    HDLC_to_MB_Holding.SumPowerApparent=GetSumPowerApparent();
+    HDLC_to_MB_Holding.CosFi=GetCosFi();
+
+    HDLC_to_MB_Holding.EnergyActiveImport = GetEnergyActiveImport();
+    HDLC_to_MB_Holding.EnergyReactiveImport = GetEnergyReactiveImport();
+    HDLC_to_MB_Holding.EnergyApparentImport = GetEnergyApparentImport();
     
     for(int i=0; i+1<20; i+=2)
     {
@@ -316,7 +341,6 @@ int main(void)
       SendRegMB[(i+20)+2]=HDLC_to_MB_i64.u16[i+1];
       SendRegMB[(i+20)+3]=HDLC_to_MB_i64.u16[ i ];
     }
-    
   }
   /* USER CODE END 3 */
 }
@@ -381,7 +405,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 7200-1;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 100-1;
+  htim1.Init.Period = 1000-1;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;

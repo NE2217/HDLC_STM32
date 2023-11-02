@@ -1,9 +1,10 @@
+/*
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "HDLC_pack.h"
 #include "MAC_Pack.h"
-/*
+
 bool RecordingInProgress = false;
  
 void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len, uint8_t Buf, uint16_t Buf_size)

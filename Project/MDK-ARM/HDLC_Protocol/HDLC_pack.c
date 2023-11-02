@@ -3,7 +3,6 @@
 #include <string.h>
 #include "HDLC_Protocol.h"
 #include "HDLC_pack.h"
-#include "MAC_Pack.h"
 #include "CRC.h"
 //--------------------------------------------------------------------------------
 #define FLAG                   0x7e
@@ -38,12 +37,7 @@ typedef union {
     unsigned NS:3;
   }Is;
 } t_control_comand;
-/*
-typedef struct {
-  uint8_t A;
-  uint8_t B;
-}t_AB_test;
-*/
+
 typedef struct {
   uint8_t start[33];
   uint8_t password[8];
