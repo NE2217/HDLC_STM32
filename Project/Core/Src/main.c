@@ -313,25 +313,25 @@ int main(void)
     /* USER CODE BEGIN 3 */
 //    float temp = GetVoltageC();
     //invertWords(&temp,2);
-    HDLC_to_MB_Holding.CurrentA=GetCurrentA();
-    HDLC_to_MB_Holding.CurrentB=GetCurrentB();
-    HDLC_to_MB_Holding.CurrentC=GetCurrentC();
-    HDLC_to_MB_Holding.VoltageA=GetVoltageA();
-    HDLC_to_MB_Holding.VoltageB=GetVoltageB();
-    HDLC_to_MB_Holding.VoltageC=GetVoltageC();
-    HDLC_to_MB_Holding.SumPowerReactive=GetSumPowerReactive();
-    HDLC_to_MB_Holding.SumPowerActive=GetSumPowerActive();
-    HDLC_to_MB_Holding.SumPowerApparent=GetSumPowerApparent();
-    HDLC_to_MB_Holding.CosFi=GetCosFi();
+    HDLC_to_MB_Holding.CurrentA         = GetCurrentA();
+    HDLC_to_MB_Holding.CurrentB         = GetCurrentB();
+    HDLC_to_MB_Holding.CurrentC         = GetCurrentC();
+    HDLC_to_MB_Holding.VoltageA         = GetVoltageA();
+    HDLC_to_MB_Holding.VoltageB         = GetVoltageB();
+    HDLC_to_MB_Holding.VoltageC         = GetVoltageC();
+    HDLC_to_MB_Holding.SumPowerReactive = GetSumPowerReactive();
+    HDLC_to_MB_Holding.SumPowerActive   = GetSumPowerActive();
+    HDLC_to_MB_Holding.SumPowerApparent = GetSumPowerApparent();
+    HDLC_to_MB_Holding.CosFi            = GetCosFi();
 
-    HDLC_to_MB_Holding.EnergyActiveImport = GetEnergyActiveImport();
+    HDLC_to_MB_Holding.EnergyActiveImport   = GetEnergyActiveImport();
     HDLC_to_MB_Holding.EnergyReactiveImport = GetEnergyReactiveImport();
     HDLC_to_MB_Holding.EnergyApparentImport = GetEnergyApparentImport();
-    
+
     for(int i=0; i+1<20; i+=2)
     {
-      SendRegMB[ i ]=HDLC_to_MB_fl.u16[i+1];
-      SendRegMB[i+1]=HDLC_to_MB_fl.u16[ i ];
+      SendRegMB[ i ] = HDLC_to_MB_fl.u16[i+1];
+      SendRegMB[i+1] = HDLC_to_MB_fl.u16[ i ];
     }
     TES = GetEnergyActiveImport();
     for(int i=0; i+3<12; i+=4)

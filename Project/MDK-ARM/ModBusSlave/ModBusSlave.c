@@ -1,75 +1,75 @@
 #include "ModBusSlave.h"
 
 
-#define SIELENT_TIME_100MKS	40u	// время тишины кратное 100 мкc TODO дать подходящее имя
+#define SIELENT_TIME_100MKS  40u  // РІСЂРµРјСЏ С‚РёС€РёРЅС‹ РєСЂР°С‚РЅРѕРµ 100 РјРєc TODO РґР°С‚СЊ РїРѕРґС…РѕРґСЏС‰РµРµ РёРјСЏ
 
-#define CMDReadCoilStatus					0x01	// чтение одного дискретного входа(DO_com)
-#define CMDReadInputStatus					0x02	// чтение значений из нескольких дискретных входов (Read Discrete Inputs - DI_com).
-#define CMDReadHoldingRegisters				0x03	// чтение значений из нескольких регистров хранениЯ (Read Holding Registers).
-#define CMDReadInputRegisters				0x04	// чтение значений из нескольких регистров ввода (Read Input Registers).
-#define CMDForceSingleCoil					0x05	// запись значениЯ одного флага (Force Single Coil). ED - Extern Digitals
-#define CMDPresetSingleRegister				0x06	// запись значениЯ в один регистр хранениЯ (Preset Single Register). EA - Extern 
-//#define CMDReadExceptionStatus				0x07	// чтение сигналов состояния (Read Exception Status)
-#define CMDForceMultipleCoils				0x0F	// запись значений в несколько регистров флагов (Force Multiple Coils)
-#define CMDPresetMultipleRegisters			0x10	// запись значений в несколько регистров хранения (Preset Multiple Registers)
-//#define CMDMaskWriteRegister				0x16	// запись в один регистр хранениЯ с использованием маски З€И и маски З€‹€И (Mask Write Register).
-//#define CMDReadFIFOQueue					0x18	// чтение данных из очереди (Read FIFO Queue)
-//#define CMDReadFileRecord					0x14	// чтение из файла (Read File Record)
-//#define CMDWriteFileRecord					0x15	// запись в файл (Write File Record)
-//#define CMDDiagnostic						0x08	// диагностика (Diagnostic)
-//#define CMDGetComEventCounter				0x0B	// чтение счетчика событий (Get Com Event Counter)
-//#define CMDGetComEventLog					0x0C	// чтение журнала событий (Get Com Event Log)
-//#define CMDReportSlaveID					0x11	// чтение информации об устройстве (Report Slave ID)
-//#define CMDEncapsulatedInterfaceTransport	0x2B	// Encapsulated Interface Transport
+#define CMDReadCoilStatus          0x01  // С‡С‚РµРЅРёРµ РѕРґРЅРѕРіРѕ РґРёСЃРєСЂРµС‚РЅРѕРіРѕ РІС…РѕРґР°(DO_com)
+#define CMDReadInputStatus          0x02  // С‡С‚РµРЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· РЅРµСЃРєРѕР»СЊРєРёС… РґРёСЃРєСЂРµС‚РЅС‹С… РІС…РѕРґРѕРІ (Read Discrete Inputs - DI_com).
+#define CMDReadHoldingRegisters        0x03  // С‡С‚РµРЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· РЅРµСЃРєРѕР»СЊРєРёС… СЂРµРіРёСЃС‚СЂРѕРІ С…СЂР°РЅРµРЅРёРЇ (Read Holding Registers).
+#define CMDReadInputRegisters        0x04  // С‡С‚РµРЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· РЅРµСЃРєРѕР»СЊРєРёС… СЂРµРіРёСЃС‚СЂРѕРІ РІРІРѕРґР° (Read Input Registers).
+#define CMDForceSingleCoil          0x05  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёРЇ РѕРґРЅРѕРіРѕ С„Р»Р°РіР° (Force Single Coil). ED - Extern Digitals
+#define CMDPresetSingleRegister        0x06  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёРЇ РІ РѕРґРёРЅ СЂРµРіРёСЃС‚СЂ С…СЂР°РЅРµРЅРёРЇ (Preset Single Register). EA - Extern 
+//#define CMDReadExceptionStatus        0x07  // С‡С‚РµРЅРёРµ СЃРёРіРЅР°Р»РѕРІ СЃРѕСЃС‚РѕСЏРЅРёСЏ (Read Exception Status)
+#define CMDForceMultipleCoils        0x0F  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёР№ РІ РЅРµСЃРєРѕР»СЊРєРѕ СЂРµРіРёСЃС‚СЂРѕРІ С„Р»Р°РіРѕРІ (Force Multiple Coils)
+#define CMDPresetMultipleRegisters      0x10  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёР№ РІ РЅРµСЃРєРѕР»СЊРєРѕ СЂРµРіРёСЃС‚СЂРѕРІ С…СЂР°РЅРµРЅРёСЏ (Preset Multiple Registers)
+//#define CMDMaskWriteRegister        0x16  // Р·Р°РїРёСЃСЊ РІ РѕРґРёРЅ СЂРµРіРёСЃС‚СЂ С…СЂР°РЅРµРЅРёРЇ СЃ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµРј РјР°СЃРєРё Р—в‚¬Р Рё РјР°СЃРєРё Р—в‚¬вЂ№в‚¬Р (Mask Write Register).
+//#define CMDReadFIFOQueue          0x18  // С‡С‚РµРЅРёРµ РґР°РЅРЅС‹С… РёР· РѕС‡РµСЂРµРґРё (Read FIFO Queue)
+//#define CMDReadFileRecord          0x14  // С‡С‚РµРЅРёРµ РёР· С„Р°Р№Р»Р° (Read File Record)
+//#define CMDWriteFileRecord          0x15  // Р·Р°РїРёСЃСЊ РІ С„Р°Р№Р» (Write File Record)
+//#define CMDDiagnostic            0x08  // РґРёР°РіРЅРѕСЃС‚РёРєР° (Diagnostic)
+//#define CMDGetComEventCounter        0x0B  // С‡С‚РµРЅРёРµ СЃС‡РµС‚С‡РёРєР° СЃРѕР±С‹С‚РёР№ (Get Com Event Counter)
+//#define CMDGetComEventLog          0x0C  // С‡С‚РµРЅРёРµ Р¶СѓСЂРЅР°Р»Р° СЃРѕР±С‹С‚РёР№ (Get Com Event Log)
+//#define CMDReportSlaveID          0x11  // С‡С‚РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё РѕР± СѓСЃС‚СЂРѕР№СЃС‚РІРµ (Report Slave ID)
+//#define CMDEncapsulatedInterfaceTransport  0x2B  // Encapsulated Interface Transport
 
-// коды ошибок
-#define ERROR_FUNCTION_CODE_CANNOT_PROCESSED	(uint8_t)0x01 //Принятый код функции не может быть обработан.
-#define ERROR_DATA_ADDRESS_NOT_AVAILABLE		(uint8_t)0x02 //Адрес данных, указанный в запросе, недоступен.
-#define ERROR_REQUEST_VALUE_NOT_VALID			(uint8_t)0x03 //Значение, содержащееся в поле данных запроса, является недопустимой величиной.
-//04	Невосстанавливаемая ошибка имела место, пока ведомое устройство пыталось выполнить затребованное действие.
-//05	Ведомое устройство приняло запрос и обрабатывает его, но это требует много времени. Этот ответ предохраняет ведущее устройство от генерации ошибки тайм-аута.
-//06	Ведомое устройство занято обработкой команды. Ведущее устройство должно повторить сообщение позже, когда ведомое освободится.
-//07	Ведомое устройство не может выполнить программную функцию, заданную в запросе. Этот код возвращается для неуспешного программного запроса, использующего функции с номерами 13 или 14. Ведущее устройство должно запросить диагностическую информацию или информацию об ошибках от ведомого.
-//08	Ведомое устройство при чтении расширенной памяти обнаружило ошибку паритета. Ведущее устройство может повторить запрос, но обычно в таких случаях требуется ремонт.
-//10(0A hex)	Шлюз неправильно настроен или перегружен запросами.
-//11(0B hex)	Slave устройства нет в сети или от него нет ответа.
+// РєРѕРґС‹ РѕС€РёР±РѕРє
+#define ERROR_FUNCTION_CODE_CANNOT_PROCESSED  (uint8_t)0x01 //РџСЂРёРЅСЏС‚С‹Р№ РєРѕРґ С„СѓРЅРєС†РёРё РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РѕР±СЂР°Р±РѕС‚Р°РЅ.
+#define ERROR_DATA_ADDRESS_NOT_AVAILABLE    (uint8_t)0x02 //РђРґСЂРµСЃ РґР°РЅРЅС‹С…, СѓРєР°Р·Р°РЅРЅС‹Р№ РІ Р·Р°РїСЂРѕСЃРµ, РЅРµРґРѕСЃС‚СѓРїРµРЅ.
+#define ERROR_REQUEST_VALUE_NOT_VALID      (uint8_t)0x03 //Р—РЅР°С‡РµРЅРёРµ, СЃРѕРґРµСЂР¶Р°С‰РµРµСЃСЏ РІ РїРѕР»Рµ РґР°РЅРЅС‹С… Р·Р°РїСЂРѕСЃР°, СЏРІР»СЏРµС‚СЃСЏ РЅРµРґРѕРїСѓСЃС‚РёРјРѕР№ РІРµР»РёС‡РёРЅРѕР№.
+//04  РќРµРІРѕСЃСЃС‚Р°РЅР°РІР»РёРІР°РµРјР°СЏ РѕС€РёР±РєР° РёРјРµР»Р° РјРµСЃС‚Рѕ, РїРѕРєР° РІРµРґРѕРјРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РїС‹С‚Р°Р»РѕСЃСЊ РІС‹РїРѕР»РЅРёС‚СЊ Р·Р°С‚СЂРµР±РѕРІР°РЅРЅРѕРµ РґРµР№СЃС‚РІРёРµ.
+//05  Р’РµРґРѕРјРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РїСЂРёРЅСЏР»Рѕ Р·Р°РїСЂРѕСЃ Рё РѕР±СЂР°Р±Р°С‚С‹РІР°РµС‚ РµРіРѕ, РЅРѕ СЌС‚Рѕ С‚СЂРµР±СѓРµС‚ РјРЅРѕРіРѕ РІСЂРµРјРµРЅРё. Р­С‚РѕС‚ РѕС‚РІРµС‚ РїСЂРµРґРѕС…СЂР°РЅСЏРµС‚ РІРµРґСѓС‰РµРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РѕС‚ РіРµРЅРµСЂР°С†РёРё РѕС€РёР±РєРё С‚Р°Р№Рј-Р°СѓС‚Р°.
+//06  Р’РµРґРѕРјРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ Р·Р°РЅСЏС‚Рѕ РѕР±СЂР°Р±РѕС‚РєРѕР№ РєРѕРјР°РЅРґС‹. Р’РµРґСѓС‰РµРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РґРѕР»Р¶РЅРѕ РїРѕРІС‚РѕСЂРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ РїРѕР·Р¶Рµ, РєРѕРіРґР° РІРµРґРѕРјРѕРµ РѕСЃРІРѕР±РѕРґРёС‚СЃСЏ.
+//07  Р’РµРґРѕРјРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РЅРµ РјРѕР¶РµС‚ РІС‹РїРѕР»РЅРёС‚СЊ РїСЂРѕРіСЂР°РјРјРЅСѓСЋ С„СѓРЅРєС†РёСЋ, Р·Р°РґР°РЅРЅСѓСЋ РІ Р·Р°РїСЂРѕСЃРµ. Р­С‚РѕС‚ РєРѕРґ РІРѕР·РІСЂР°С‰Р°РµС‚СЃСЏ РґР»СЏ РЅРµСѓСЃРїРµС€РЅРѕРіРѕ РїСЂРѕРіСЂР°РјРјРЅРѕРіРѕ Р·Р°РїСЂРѕСЃР°, РёСЃРїРѕР»СЊР·СѓСЋС‰РµРіРѕ С„СѓРЅРєС†РёРё СЃ РЅРѕРјРµСЂР°РјРё 13 РёР»Рё 14. Р’РµРґСѓС‰РµРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РґРѕР»Р¶РЅРѕ Р·Р°РїСЂРѕСЃРёС‚СЊ РґРёР°РіРЅРѕСЃС‚РёС‡РµСЃРєСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ РёР»Рё РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± РѕС€РёР±РєР°С… РѕС‚ РІРµРґРѕРјРѕРіРѕ.
+//08  Р’РµРґРѕРјРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РїСЂРё С‡С‚РµРЅРёРё СЂР°СЃС€РёСЂРµРЅРЅРѕР№ РїР°РјСЏС‚Рё РѕР±РЅР°СЂСѓР¶РёР»Рѕ РѕС€РёР±РєСѓ РїР°СЂРёС‚РµС‚Р°. Р’РµРґСѓС‰РµРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ РјРѕР¶РµС‚ РїРѕРІС‚РѕСЂРёС‚СЊ Р·Р°РїСЂРѕСЃ, РЅРѕ РѕР±С‹С‡РЅРѕ РІ С‚Р°РєРёС… СЃР»СѓС‡Р°СЏС… С‚СЂРµР±СѓРµС‚СЃСЏ СЂРµРјРѕРЅС‚.
+//10(0A hex)  РЁР»СЋР· РЅРµРїСЂР°РІРёР»СЊРЅРѕ РЅР°СЃС‚СЂРѕРµРЅ РёР»Рё РїРµСЂРµРіСЂСѓР¶РµРЅ Р·Р°РїСЂРѕСЃР°РјРё.
+//11(0B hex)  Slave СѓСЃС‚СЂРѕР№СЃС‚РІР° РЅРµС‚ РІ СЃРµС‚Рё РёР»Рё РѕС‚ РЅРµРіРѕ РЅРµС‚ РѕС‚РІРµС‚Р°.
 
-#define Uint16ByteSwap(v)	(uint16_t)((v<<8) | (v>>8))
+#define Uint16ByteSwap(v)  (uint16_t)((v<<8) | (v>>8))
 
 
-#pragma pack(push, 1)	// установка выравнивания в 1 байт
+#pragma pack(push, 1)  // СѓСЃС‚Р°РЅРѕРІРєР° РІС‹СЂР°РІРЅРёРІР°РЅРёСЏ РІ 1 Р±Р°Р№С‚
 typedef struct
-{	
-	uint8_t stationId;
-	uint8_t functionCode;
-	
-	uint16_t firstRegAddress;
-	uint16_t registersCount;
-	uint16_t data;
+{  
+  uint8_t stationId;
+  uint8_t functionCode;
+  
+  uint16_t firstRegAddress;
+  uint16_t registersCount;
+  uint16_t data;
 } t_IncommingDataStruct;
 #pragma pack(pop)
 
-#pragma pack(push, 1)	// установка выравнивания в 1 байт
+#pragma pack(push, 1)  // СѓСЃС‚Р°РЅРѕРІРєР° РІС‹СЂР°РІРЅРёРІР°РЅРёСЏ РІ 1 Р±Р°Р№С‚
 typedef struct
-{	
-	uint8_t stationId;
-	uint8_t functionCode;
-	
-	uint16_t firstRegAddress;
-	uint16_t registersCount;
-	uint8_t dataBytesCount;
-	uint8_t firstDataByte;
+{  
+  uint8_t stationId;
+  uint8_t functionCode;
+  
+  uint16_t firstRegAddress;
+  uint16_t registersCount;
+  uint8_t dataBytesCount;
+  uint8_t firstDataByte;
 } t_IncommingDataStructForceMultipleCoils;
 #pragma pack(pop)
 
-#define RX_BUF_SIZE			100u
+#define RX_BUF_SIZE      100u
 uint16_t rxBufCnt;
 uint8_t RxBufModBus[RX_BUF_SIZE]; //
-#define TX_BUF_SIZE			100u
+#define TX_BUF_SIZE      100u
 uint16_t txBufCnt;
 uint8_t TxBufModBus[TX_BUF_SIZE]; //
 
-bool DataIsAccepted;	// состояние приема//неприема данных
+bool DataIsAccepted;  // СЃРѕСЃС‚РѕСЏРЅРёРµ РїСЂРёРµРјР°//РЅРµРїСЂРёРµРјР° РґР°РЅРЅС‹С…
 
 t_modbus_init_struct ModBusHandler;
 
@@ -90,559 +90,559 @@ uint16_t ErrorRequest(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData, uint
 
 
 
-// очистка структуры перед использованием
+// РѕС‡РёСЃС‚РєР° СЃС‚СЂСѓРєС‚СѓСЂС‹ РїРµСЂРµРґ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµРј
 void ModBusStructInit(t_modbus_init_struct *initStruct)
 {
-	memset(initStruct, 0, sizeof(t_modbus_init_struct));
+  memset(initStruct, 0, sizeof(t_modbus_init_struct));
 }
 // ----------------------------------------------------------------------------
-// функция инициализации
+// С„СѓРЅРєС†РёСЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
 void ModBusInit(t_modbus_init_struct * initStruct)
 {
-	ModBusStructInit(&ModBusHandler);
+  ModBusStructInit(&ModBusHandler);
 
-	ModBusHandler.stationId = initStruct->stationId;
-	ModBusHandler._GetTicks100Mks = initStruct->_GetTicks100Mks;
-	ModBusHandler._sendByte = initStruct->_sendByte;
+  ModBusHandler.stationId = initStruct->stationId;
+  ModBusHandler._GetTicks100Mks = initStruct->_GetTicks100Mks;
+  ModBusHandler._sendByte = initStruct->_sendByte;
 
-	if(ModBusHandler._GetTicks100Mks != NULL)
-	{ ModBusHandler.currentTimeMks = ModBusHandler._GetTicks100Mks(); }
-	
-	ModBusHandler.sielentTimeMks = 0;
-	ModBusHandler.sielentTimeMaxMks = SIELENT_TIME_100MKS;
-	
-	ModBusHandler.HoldingRegistersPtr = initStruct->HoldingRegistersPtr;
-	ModBusHandler.HoldingRegistersSize = initStruct->HoldingRegistersSize;
+  if(ModBusHandler._GetTicks100Mks != NULL)
+  { ModBusHandler.currentTimeMks = ModBusHandler._GetTicks100Mks(); }
+  
+  ModBusHandler.sielentTimeMks = 0;
+  ModBusHandler.sielentTimeMaxMks = SIELENT_TIME_100MKS;
+  
+  ModBusHandler.HoldingRegistersPtr = initStruct->HoldingRegistersPtr;
+  ModBusHandler.HoldingRegistersSize = initStruct->HoldingRegistersSize;
 
-	ModBusHandler.InputRegistersPtr = initStruct->InputRegistersPtr;
-	ModBusHandler.InputRegistersSize = initStruct->InputRegistersSize;
-	
-	ModBusHandler.CoilStatusRegistersPtr = initStruct->CoilStatusRegistersPtr;
-	ModBusHandler.CoilStatusRegistersSize = initStruct->CoilStatusRegistersSize;
-	
-	ModBusHandler.InputStatusRegistersPtr = initStruct->InputStatusRegistersPtr;
-	ModBusHandler.InputStatusRegistersSize = initStruct->InputStatusRegistersSize;
+  ModBusHandler.InputRegistersPtr = initStruct->InputRegistersPtr;
+  ModBusHandler.InputRegistersSize = initStruct->InputRegistersSize;
+  
+  ModBusHandler.CoilStatusRegistersPtr = initStruct->CoilStatusRegistersPtr;
+  ModBusHandler.CoilStatusRegistersSize = initStruct->CoilStatusRegistersSize;
+  
+  ModBusHandler.InputStatusRegistersPtr = initStruct->InputStatusRegistersPtr;
+  ModBusHandler.InputStatusRegistersSize = initStruct->InputStatusRegistersSize;
 
-	ModBusHandler.CoilForcesRegistersPtr = initStruct->CoilForcesRegistersPtr;
-	ModBusHandler.CoilForcesRegistersSize = initStruct->CoilForcesRegistersSize;
-	
-	ModBusHandler.PresetRegistersPtr = initStruct->PresetRegistersPtr;
-	ModBusHandler.PresetRegistersSize = initStruct->PresetRegistersSize;
-	
-	rxBufCnt = 0;
-	memset(RxBufModBus, 0, RX_BUF_SIZE);
-	memset(TxBufModBus, 0, TX_BUF_SIZE);
-	
-	DataIsAccepted = false;
+  ModBusHandler.CoilForcesRegistersPtr = initStruct->CoilForcesRegistersPtr;
+  ModBusHandler.CoilForcesRegistersSize = initStruct->CoilForcesRegistersSize;
+  
+  ModBusHandler.PresetRegistersPtr = initStruct->PresetRegistersPtr;
+  ModBusHandler.PresetRegistersSize = initStruct->PresetRegistersSize;
+  
+  rxBufCnt = 0;
+  memset(RxBufModBus, 0, RX_BUF_SIZE);
+  memset(TxBufModBus, 0, TX_BUF_SIZE);
+  
+  DataIsAccepted = false;
 }
 // ----------------------------------------------------------------------------
-// вызов этой функции должен происходить по событию приема данных
+// РІС‹Р·РѕРІ СЌС‚РѕР№ С„СѓРЅРєС†РёРё РґРѕР»Р¶РµРЅ РїСЂРѕРёСЃС…РѕРґРёС‚СЊ РїРѕ СЃРѕР±С‹С‚РёСЋ РїСЂРёРµРјР° РґР°РЅРЅС‹С…
 void ModBusSetData(uint8_t *dataIn, uint16_t dataSize)
 {
-	if(ModBusHandler._GetTicks100Mks != NULL)
-	{ ModBusHandler.currentTimeMks = ModBusHandler._GetTicks100Mks(); }
+  if(ModBusHandler._GetTicks100Mks != NULL)
+  { ModBusHandler.currentTimeMks = ModBusHandler._GetTicks100Mks(); }
 
-	if(rxBufCnt < RX_BUF_SIZE)
-	{ RxBufModBus[rxBufCnt++] = *dataIn; }
+  if(rxBufCnt < RX_BUF_SIZE)
+  { RxBufModBus[rxBufCnt++] = *dataIn; }
 
-	DataIsAccepted = true;
+  DataIsAccepted = true;
 }
 // ----------------------------------------------------------------------------
-// эта функция должна вызываться в основном потоке
+// СЌС‚Р° С„СѓРЅРєС†РёСЏ РґРѕР»Р¶РЅР° РІС‹Р·С‹РІР°С‚СЊСЃСЏ РІ РѕСЃРЅРѕРІРЅРѕРј РїРѕС‚РѕРєРµ
 void ModBusRun(void)
 {
-	uint32_t tmp;
+  uint32_t tmp;
 
-	if(ModBusHandler._GetTicks100Mks != NULL)
-	{ 
-		if(DataIsAccepted)
-		{
-			tmp = ModBusHandler._GetTicks100Mks();
-			ModBusHandler.sielentTimeMks = (tmp - ModBusHandler.currentTimeMks);
-			
-			if( ModBusHandler.sielentTimeMks > ModBusHandler.sielentTimeMaxMks)
-			{
-				DataIsAccepted = false;
-				DataHandler(TxBufModBus, TX_BUF_SIZE, RxBufModBus, rxBufCnt);
-				
-				rxBufCnt = 0;
-			}
-		}	
-	}
+  if(ModBusHandler._GetTicks100Mks != NULL)
+  { 
+    if(DataIsAccepted)
+    {
+      tmp = ModBusHandler._GetTicks100Mks();
+      ModBusHandler.sielentTimeMks = (tmp - ModBusHandler.currentTimeMks);
+      
+      if( ModBusHandler.sielentTimeMks > ModBusHandler.sielentTimeMaxMks)
+      {
+        DataIsAccepted = false;
+        DataHandler(TxBufModBus, TX_BUF_SIZE, RxBufModBus, rxBufCnt);
+        
+        rxBufCnt = 0;
+      }
+    }  
+  }
 }
 // ----------------------------------------------------------------------------
 uint16_t CalcCrc16(uint8_t *data, uint16_t size)
 {
-	uint16_t crc = 0xFFFF;
-	uint8_t pos;
-	uint8_t bitCnt;
-	
-	for(pos = 0; pos < size; ++pos)
-	{
-		crc ^= (uint16_t)data[pos];				// XOR byte into least sig. byte of crc
-		
-		for(bitCnt = 8; bitCnt |= 0; --bitCnt)	// Loop over each bit
-		{
-			if( (crc & 0x0001) != 0 )			// If the LSB is set
-			{
-				crc >>= 1;						// Shift right and XOR 0xA001
-				crc ^= 0xA001;
-			}
-			else								// Else LSB is not set
-			{
-				crc >>= 1;						// Just shift right
-			}
-		}	
-	}
-	return crc;
+  uint16_t crc = 0xFFFF;
+  uint8_t pos;
+  uint8_t bitCnt;
+  
+  for(pos = 0; pos < size; ++pos)
+  {
+    crc ^= (uint16_t)data[pos];        // XOR byte into least sig. byte of crc
+    
+    for(bitCnt = 8; bitCnt |= 0; --bitCnt)  // Loop over each bit
+    {
+      if( (crc & 0x0001) != 0 )      // If the LSB is set
+      {
+        crc >>= 1;            // Shift right and XOR 0xA001
+        crc ^= 0xA001;
+      }
+      else                // Else LSB is not set
+      {
+        crc >>= 1;            // Just shift right
+      }
+    }  
+  }
+  return crc;
 }
 // ----------------------------------------------------------------------------
 bool CeckCrc16(uint8_t *data, uint16_t size)
 {
-	uint16_t crc;
-	
-	if(size < 2)
-		return false;
-	
-	crc = (data[size-1]<<8) | (data[size-2]);
-	
-	return (crc == CalcCrc16(data, size-2));
+  uint16_t crc;
+  
+  if(size < 2)
+    return false;
+  
+  crc = (data[size-1]<<8) | (data[size-2]);
+  
+  return (crc == CalcCrc16(data, size-2));
 }
 // ----------------------------------------------------------------------------
 void DataHandler(uint8_t *txBuf, uint16_t txBufSize, uint8_t *rxData, uint16_t rxDatasize)
 {
-	uint16_t countDataToSend = false;
+  uint16_t countDataToSend = false;
 
-	if(rxData[0] == ModBusHandler.stationId)
-	{
-		// проверка CRC
-		if(!CeckCrc16(rxData, rxDatasize) )
-			return;
-		
-		switch(rxData[1])
-		{
-			case CMDReadCoilStatus:	// чтение одного дискретного входа
-				countDataToSend = ReadCoilStatus(TxBufModBus, TX_BUF_SIZE, rxData);
-				break;
-			case CMDReadInputStatus:	// чтение значений из нескольких дискретных входов (Read Discrete Inputs).
-				countDataToSend = ReadInputStatus(TxBufModBus, TX_BUF_SIZE, rxData);
-				break;
-			case CMDReadHoldingRegisters:	// чтение значений из нескольких регистров хранениЯ (Read Holding Registers).
-				countDataToSend = ReadHoldingRegisters(TxBufModBus, TX_BUF_SIZE, rxData); // SA_com registers
-				break;
-			case CMDReadInputRegisters:	// чтение значений из нескольких регистров ввода (Read Input Registers).
-				countDataToSend = ReadInputRegisters(TxBufModBus, TX_BUF_SIZE, rxData); // AI_com registers
-				break;
-			case CMDForceSingleCoil:	// запись значениЯ одного флага (Force Single Coil).
-				countDataToSend = ForceSingleCoil(TxBufModBus, TX_BUF_SIZE, rxData);
-				break;
-			case CMDPresetSingleRegister:	// запись значениЯ в один регистр хранениЯ (Preset Single Register).
-				countDataToSend = PresetSingleRegister(TxBufModBus, TX_BUF_SIZE, rxData);
-				break;
-//			case CMDReadExceptionStatus:	// чтение сигналов состоЯниЯ (Read Exception Status)
+  if(rxData[0] == ModBusHandler.stationId)
+  {
+    // РїСЂРѕРІРµСЂРєР° CRC
+    if(!CeckCrc16(rxData, rxDatasize) )
+      return;
+    
+    switch(rxData[1])
+    {
+      case CMDReadCoilStatus:  // С‡С‚РµРЅРёРµ РѕРґРЅРѕРіРѕ РґРёСЃРєСЂРµС‚РЅРѕРіРѕ РІС…РѕРґР°
+        countDataToSend = ReadCoilStatus(TxBufModBus, TX_BUF_SIZE, rxData);
+        break;
+      case CMDReadInputStatus:  // С‡С‚РµРЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· РЅРµСЃРєРѕР»СЊРєРёС… РґРёСЃРєСЂРµС‚РЅС‹С… РІС…РѕРґРѕРІ (Read Discrete Inputs).
+        countDataToSend = ReadInputStatus(TxBufModBus, TX_BUF_SIZE, rxData);
+        break;
+      case CMDReadHoldingRegisters:  // С‡С‚РµРЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· РЅРµСЃРєРѕР»СЊРєРёС… СЂРµРіРёСЃС‚СЂРѕРІ С…СЂР°РЅРµРЅРёРЇ (Read Holding Registers).
+        countDataToSend = ReadHoldingRegisters(TxBufModBus, TX_BUF_SIZE, rxData); // SA_com registers
+        break;
+      case CMDReadInputRegisters:  // С‡С‚РµРЅРёРµ Р·РЅР°С‡РµРЅРёР№ РёР· РЅРµСЃРєРѕР»СЊРєРёС… СЂРµРіРёСЃС‚СЂРѕРІ РІРІРѕРґР° (Read Input Registers).
+        countDataToSend = ReadInputRegisters(TxBufModBus, TX_BUF_SIZE, rxData); // AI_com registers
+        break;
+      case CMDForceSingleCoil:  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёРЇ РѕРґРЅРѕРіРѕ С„Р»Р°РіР° (Force Single Coil).
+        countDataToSend = ForceSingleCoil(TxBufModBus, TX_BUF_SIZE, rxData);
+        break;
+      case CMDPresetSingleRegister:  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёРЇ РІ РѕРґРёРЅ СЂРµРіРёСЃС‚СЂ С…СЂР°РЅРµРЅРёРЇ (Preset Single Register).
+        countDataToSend = PresetSingleRegister(TxBufModBus, TX_BUF_SIZE, rxData);
+        break;
+//      case CMDReadExceptionStatus:  // С‡С‚РµРЅРёРµ СЃРёРіРЅР°Р»РѕРІ СЃРѕСЃС‚РѕРЇРЅРёРЇ (Read Exception Status)
 
-//				break;
-			case CMDForceMultipleCoils:	// запись значений в несколько регистров флагов (Force Multiple Coils)
-				countDataToSend = ForceMultipleCoils(TxBufModBus, TX_BUF_SIZE, rxData);
-				break;
-			case CMDPresetMultipleRegisters:	// запись значений в несколько регистров хранениЯ (Preset Multiple Registers)
-				countDataToSend = PresetMultipleRegisters(TxBufModBus, TX_BUF_SIZE, rxData);
-				break;
-//			case CMDMaskWriteRegister:	// запись в один регистр хранениЯ с использованием маски З€И и маски З€‹€И (Mask Write Register).
+//        break;
+      case CMDForceMultipleCoils:  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёР№ РІ РЅРµСЃРєРѕР»СЊРєРѕ СЂРµРіРёСЃС‚СЂРѕРІ С„Р»Р°РіРѕРІ (Force Multiple Coils)
+        countDataToSend = ForceMultipleCoils(TxBufModBus, TX_BUF_SIZE, rxData);
+        break;
+      case CMDPresetMultipleRegisters:  // Р·Р°РїРёСЃСЊ Р·РЅР°С‡РµРЅРёР№ РІ РЅРµСЃРєРѕР»СЊРєРѕ СЂРµРіРёСЃС‚СЂРѕРІ С…СЂР°РЅРµРЅРёРЇ (Preset Multiple Registers)
+        countDataToSend = PresetMultipleRegisters(TxBufModBus, TX_BUF_SIZE, rxData);
+        break;
+//      case CMDMaskWriteRegister:  // Р·Р°РїРёСЃСЊ РІ РѕРґРёРЅ СЂРµРіРёСЃС‚СЂ С…СЂР°РЅРµРЅРёРЇ СЃ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµРј РјР°СЃРєРё Р—в‚¬Р Рё РјР°СЃРєРё Р—в‚¬вЂ№в‚¬Р (Mask Write Register).
 
-//				break;
-//			case CMDReadFIFOQueue:	// чтение данных из очереди (Read FIFO Queue)
+//        break;
+//      case CMDReadFIFOQueue:  // С‡С‚РµРЅРёРµ РґР°РЅРЅС‹С… РёР· РѕС‡РµСЂРµРґРё (Read FIFO Queue)
 
-//				break;
-//			case CMDReadFileRecord:	// чтение из файла (Read File Record)
+//        break;
+//      case CMDReadFileRecord:  // С‡С‚РµРЅРёРµ РёР· С„Р°Р№Р»Р° (Read File Record)
 
-//				break;
-//			case CMDWriteFileRecord:	// запись в файл (Write File Record)
+//        break;
+//      case CMDWriteFileRecord:  // Р·Р°РїРёСЃСЊ РІ С„Р°Р№Р» (Write File Record)
 
-//				break;
-//			case CMDDiagnostic:	// диагностика (Diagnostic)
+//        break;
+//      case CMDDiagnostic:  // РґРёР°РіРЅРѕСЃС‚РёРєР° (Diagnostic)
 
-//				break;
-//			case CMDGetComEventCounter:	// чтение счетчика событий (Get Com Event Counter)
+//        break;
+//      case CMDGetComEventCounter:  // С‡С‚РµРЅРёРµ СЃС‡РµС‚С‡РёРєР° СЃРѕР±С‹С‚РёР№ (Get Com Event Counter)
 
-//				break;
-//			case CMDGetComEventLog:	// чтение журнала событий (Get Com Event Log)
+//        break;
+//      case CMDGetComEventLog:  // С‡С‚РµРЅРёРµ Р¶СѓСЂРЅР°Р»Р° СЃРѕР±С‹С‚РёР№ (Get Com Event Log)
 
-//				break;
-//			case CMDReportSlaveID:	// чтение информации об устройстве (Report Slave ID)
+//        break;
+//      case CMDReportSlaveID:  // С‡С‚РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё РѕР± СѓСЃС‚СЂРѕР№СЃС‚РІРµ (Report Slave ID)
 
-//				break;
-//			case CMDEncapsulatedInterfaceTransport:	// Encapsulated Interface Transport
+//        break;
+//      case CMDEncapsulatedInterfaceTransport:  // Encapsulated Interface Transport
 
-//				break;
-			default:
-				countDataToSend = ErrorRequest(TxBufModBus, TX_BUF_SIZE, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED);
-				break;
-		}
-	}
-	if(countDataToSend > 0)
-	{
-		// отправка данных
-		ModBusSendData(TxBufModBus, countDataToSend);
-	}
+//        break;
+      default:
+        countDataToSend = ErrorRequest(TxBufModBus, TX_BUF_SIZE, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED);
+        break;
+    }
+  }
+  if(countDataToSend > 0)
+  {
+    // РѕС‚РїСЂР°РІРєР° РґР°РЅРЅС‹С…
+    ModBusSendData(TxBufModBus, countDataToSend);
+  }
 }
 // ----------------------------------------------------------------------------
 uint16_t ReadRegisters(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	uint16_t txDataLen = 0;
-	uint16_t firstRegIndex;
-	uint16_t calledRegsMaxIndex;	// максимальный запрашиваемый индекс регистра
-	uint16_t registerMaxIndex = 0;	// максимальный индекс регистра
-	uint16_t *regsArrayPrt = NULL;	// указатель на массив регистров
-	uint16_t crc16 = 0;
-	
-	t_IncommingDataStruct *dataStruct;
-	dataStruct = (t_IncommingDataStruct *)rxData;
-	
-	dataStruct->stationId = dataStruct->stationId;
-	dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress);
-	dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
+  uint16_t txDataLen = 0;
+  uint16_t firstRegIndex;
+  uint16_t calledRegsMaxIndex;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t registerMaxIndex = 0;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t *regsArrayPrt = NULL;  // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РјР°СЃСЃРёРІ СЂРµРіРёСЃС‚СЂРѕРІ
+  uint16_t crc16 = 0;
+  
+  t_IncommingDataStruct *dataStruct;
+  dataStruct = (t_IncommingDataStruct *)rxData;
+  
+  dataStruct->stationId = dataStruct->stationId;
+  dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress);
+  dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
 
-	calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
-	
-	if(dataStruct->functionCode == CMDReadHoldingRegisters)
-	{ 
-		registerMaxIndex = ModBusHandler.HoldingRegistersSize;
-		regsArrayPrt = ModBusHandler.HoldingRegistersPtr;
-	}
-	if(dataStruct->functionCode == CMDReadInputRegisters)
-	{ 
-		registerMaxIndex = ModBusHandler.InputRegistersSize; 
-		regsArrayPrt = ModBusHandler.InputRegistersPtr;
-	}
+  calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
+  
+  if(dataStruct->functionCode == CMDReadHoldingRegisters)
+  { 
+    registerMaxIndex = ModBusHandler.HoldingRegistersSize;
+    regsArrayPrt = ModBusHandler.HoldingRegistersPtr;
+  }
+  if(dataStruct->functionCode == CMDReadInputRegisters)
+  { 
+    registerMaxIndex = ModBusHandler.InputRegistersSize; 
+    regsArrayPrt = ModBusHandler.InputRegistersPtr;
+  }
 
-	if(dataStruct->firstRegAddress >= registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
-	if(calledRegsMaxIndex > registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
-	
-	txData[txDataLen++] = dataStruct->stationId;
-	txData[txDataLen++] = dataStruct->functionCode;
-	txData[txDataLen++] = dataStruct->registersCount * 2;
-	
-	for(firstRegIndex = dataStruct->firstRegAddress; firstRegIndex < calledRegsMaxIndex; ++firstRegIndex)
-	{
-		txData[txDataLen++] = regsArrayPrt[firstRegIndex]>>8;
-		txData[txDataLen++] = regsArrayPrt[firstRegIndex];
-	}
-	crc16 = CalcCrc16(txData,txDataLen);
-	txData[txDataLen++] = crc16 & 0xFF;
-	txData[txDataLen++] = crc16>>8;
-	
-	return txDataLen;
+  if(dataStruct->firstRegAddress >= registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
+  if(calledRegsMaxIndex > registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
+  
+  txData[txDataLen++] = dataStruct->stationId;
+  txData[txDataLen++] = dataStruct->functionCode;
+  txData[txDataLen++] = dataStruct->registersCount * 2;
+  
+  for(firstRegIndex = dataStruct->firstRegAddress; firstRegIndex < calledRegsMaxIndex; ++firstRegIndex)
+  {
+    txData[txDataLen++] = regsArrayPrt[firstRegIndex]>>8;
+    txData[txDataLen++] = regsArrayPrt[firstRegIndex];
+  }
+  crc16 = CalcCrc16(txData,txDataLen);
+  txData[txDataLen++] = crc16 & 0xFF;
+  txData[txDataLen++] = crc16>>8;
+  
+  return txDataLen;
 }
 // ----------------------------------------------------------------------------
 uint16_t ReadHoldingRegisters(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
-{	
-	return ReadRegisters(txData, txBufSize, rxData);
+{  
+  return ReadRegisters(txData, txBufSize, rxData);
 }
 // ----------------------------------------------------------------------------
 uint16_t ReadInputRegisters(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	return ReadRegisters(txData, txBufSize, rxData);
+  return ReadRegisters(txData, txBufSize, rxData);
 }
 // ----------------------------------------------------------------------------
 uint16_t ReadDiscrets(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	uint16_t txDataLen = 0;
-	uint16_t firstRegIndex;
-	uint8_t bitsCounter = 0;		// счетчик для формирования битовых байтов :)
-	uint16_t calledRegsMaxIndex;	// максимальный запрашиваемый индекс регистра
-	uint16_t registerMaxIndex = 0;	// максимальный индекс регистра
-	bool *regsArrayPrt = NULL;		// указатель на массив регистров
-	uint16_t crc16 = 0;
-	
-	t_IncommingDataStruct *dataStruct;
-	dataStruct = (t_IncommingDataStruct *)rxData;
-	
-	dataStruct->stationId = dataStruct->stationId;
-	dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress);
-	dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
+  uint16_t txDataLen = 0;
+  uint16_t firstRegIndex;
+  uint8_t bitsCounter = 0;    // СЃС‡РµС‚С‡РёРє РґР»СЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ Р±РёС‚РѕРІС‹С… Р±Р°Р№С‚РѕРІ :)
+  uint16_t calledRegsMaxIndex;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t registerMaxIndex = 0;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  bool *regsArrayPrt = NULL;    // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РјР°СЃСЃРёРІ СЂРµРіРёСЃС‚СЂРѕРІ
+  uint16_t crc16 = 0;
+  
+  t_IncommingDataStruct *dataStruct;
+  dataStruct = (t_IncommingDataStruct *)rxData;
+  
+  dataStruct->stationId = dataStruct->stationId;
+  dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress);
+  dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
 
-	calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
-	
-	if(dataStruct->functionCode == CMDReadCoilStatus)
-	{ 
-		registerMaxIndex = ModBusHandler.CoilStatusRegistersSize;
-		regsArrayPrt = ModBusHandler.CoilStatusRegistersPtr;
-	}
-	if(dataStruct->functionCode == CMDReadInputStatus)
-	{ 
-		registerMaxIndex = ModBusHandler.InputStatusRegistersSize;
-		regsArrayPrt = ModBusHandler.InputStatusRegistersPtr;
-	}
+  calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
+  
+  if(dataStruct->functionCode == CMDReadCoilStatus)
+  { 
+    registerMaxIndex = ModBusHandler.CoilStatusRegistersSize;
+    regsArrayPrt = ModBusHandler.CoilStatusRegistersPtr;
+  }
+  if(dataStruct->functionCode == CMDReadInputStatus)
+  { 
+    registerMaxIndex = ModBusHandler.InputStatusRegistersSize;
+    regsArrayPrt = ModBusHandler.InputStatusRegistersPtr;
+  }
 
-	if(regsArrayPrt == NULL)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
-	if(dataStruct->firstRegAddress >= registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
-	if(calledRegsMaxIndex > registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
-	
-	txData[txDataLen++] = dataStruct->stationId;
-	txData[txDataLen++] = dataStruct->functionCode;
+  if(regsArrayPrt == NULL)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
+  if(dataStruct->firstRegAddress >= registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
+  if(calledRegsMaxIndex > registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
+  
+  txData[txDataLen++] = dataStruct->stationId;
+  txData[txDataLen++] = dataStruct->functionCode;
 
-	txData[txDataLen] = dataStruct->registersCount/8; // количество байт
-	txData[txDataLen++] += ((dataStruct->registersCount%8) > 0)?(1):(0);
-	
-	bitsCounter = 0;
-	txData[txDataLen] = 0;
-	for(firstRegIndex = dataStruct->firstRegAddress; firstRegIndex < calledRegsMaxIndex; ++firstRegIndex)
-	{
-		if(bitsCounter > 7)
-		{
-			bitsCounter = 0;
-			++txDataLen;
-			txData[txDataLen] = 0;
-		}
-		txData[txDataLen] |= regsArrayPrt[firstRegIndex]<<bitsCounter;
-		++bitsCounter;
-	}
-	++txDataLen;
+  txData[txDataLen] = dataStruct->registersCount/8; // РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚
+  txData[txDataLen++] += ((dataStruct->registersCount%8) > 0)?(1):(0);
+  
+  bitsCounter = 0;
+  txData[txDataLen] = 0;
+  for(firstRegIndex = dataStruct->firstRegAddress; firstRegIndex < calledRegsMaxIndex; ++firstRegIndex)
+  {
+    if(bitsCounter > 7)
+    {
+      bitsCounter = 0;
+      ++txDataLen;
+      txData[txDataLen] = 0;
+    }
+    txData[txDataLen] |= regsArrayPrt[firstRegIndex]<<bitsCounter;
+    ++bitsCounter;
+  }
+  ++txDataLen;
 
-	crc16 = CalcCrc16(txData,txDataLen);
-	txData[txDataLen++] = crc16 & 0xFF;
-	txData[txDataLen++] = crc16>>8;
-	
-	return txDataLen;
+  crc16 = CalcCrc16(txData,txDataLen);
+  txData[txDataLen++] = crc16 & 0xFF;
+  txData[txDataLen++] = crc16>>8;
+  
+  return txDataLen;
 }
 uint16_t ReadCoilStatus(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	return ReadDiscrets(txData, txBufSize, rxData);
+  return ReadDiscrets(txData, txBufSize, rxData);
 }
 uint16_t ReadInputStatus(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	return ReadDiscrets(txData, txBufSize, rxData);
+  return ReadDiscrets(txData, txBufSize, rxData);
 }
 // ----------------------------------------------------------------------------
 uint16_t ForceSingleCoil(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	uint16_t txDataLen = 0;
-//	uint16_t firstRegIndex;
-//	uint8_t bitsCounter = 0;	// счетчик для формирования битовых байтов :)
-//	uint16_t calledRegsMaxIndex;	// максимальный запрашиваемый индекс регистра
-	uint16_t registerMaxIndex = 0;	// максимальный индекс регистра
-	bool *regsArrayPrt = NULL;	// указатель на массив регистров
-	uint16_t crc16 = 0;
-	
-	t_IncommingDataStruct *dataStruct;
-	dataStruct = (t_IncommingDataStruct *)rxData;
-	
-	dataStruct->stationId = dataStruct->stationId;
-	dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress); 
-	dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount); // Coil set/reset value
+  uint16_t txDataLen = 0;
+//  uint16_t firstRegIndex;
+//  uint8_t bitsCounter = 0;  // СЃС‡РµС‚С‡РёРє РґР»СЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ Р±РёС‚РѕРІС‹С… Р±Р°Р№С‚РѕРІ :)
+//  uint16_t calledRegsMaxIndex;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t registerMaxIndex = 0;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  bool *regsArrayPrt = NULL;  // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РјР°СЃСЃРёРІ СЂРµРіРёСЃС‚СЂРѕРІ
+  uint16_t crc16 = 0;
+  
+  t_IncommingDataStruct *dataStruct;
+  dataStruct = (t_IncommingDataStruct *)rxData;
+  
+  dataStruct->stationId = dataStruct->stationId;
+  dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress); 
+  dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount); // Coil set/reset value
 
-	//calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
-	
-	if(dataStruct->functionCode == CMDForceSingleCoil)//CMDForceMultipleCoils
-	{ 
-		regsArrayPrt = ModBusHandler.CoilForcesRegistersPtr;
-		registerMaxIndex = ModBusHandler.CoilForcesRegistersSize;
-	}
+  //calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
+  
+  if(dataStruct->functionCode == CMDForceSingleCoil)//CMDForceMultipleCoils
+  { 
+    regsArrayPrt = ModBusHandler.CoilForcesRegistersPtr;
+    registerMaxIndex = ModBusHandler.CoilForcesRegistersSize;
+  }
 
-	if(regsArrayPrt == NULL)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
-	// проверка если адрес входит в диапазон адресов
-	if(dataStruct->firstRegAddress >= registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
-	
-	txData[txDataLen++] = dataStruct->stationId;
-	txData[txDataLen++] = dataStruct->functionCode;
+  if(regsArrayPrt == NULL)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
+  // РїСЂРѕРІРµСЂРєР° РµСЃР»Рё Р°РґСЂРµСЃ РІС…РѕРґРёС‚ РІ РґРёР°РїР°Р·РѕРЅ Р°РґСЂРµСЃРѕРІ
+  if(dataStruct->firstRegAddress >= registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
+  
+  txData[txDataLen++] = dataStruct->stationId;
+  txData[txDataLen++] = dataStruct->functionCode;
 
-	txData[txDataLen++] = dataStruct->firstRegAddress>>8;
-	txData[txDataLen++] = dataStruct->firstRegAddress & 0xFF;
-	
-	regsArrayPrt[dataStruct->firstRegAddress] = (dataStruct->registersCount == 0xFF00)?(true):(false);
-	
-	// Coil set/reset value
-	txData[txDataLen++] = dataStruct->registersCount>>8;
-	txData[txDataLen++] = dataStruct->registersCount & 0xFF;
+  txData[txDataLen++] = dataStruct->firstRegAddress>>8;
+  txData[txDataLen++] = dataStruct->firstRegAddress & 0xFF;
+  
+  regsArrayPrt[dataStruct->firstRegAddress] = (dataStruct->registersCount == 0xFF00)?(true):(false);
+  
+  // Coil set/reset value
+  txData[txDataLen++] = dataStruct->registersCount>>8;
+  txData[txDataLen++] = dataStruct->registersCount & 0xFF;
 
-	crc16 = CalcCrc16(txData,txDataLen);
-	txData[txDataLen++] = crc16 & 0xFF;
-	txData[txDataLen++] = crc16>>8;
-	
-	return txDataLen;
+  crc16 = CalcCrc16(txData,txDataLen);
+  txData[txDataLen++] = crc16 & 0xFF;
+  txData[txDataLen++] = crc16>>8;
+  
+  return txDataLen;
 }
 // ----------------------------------------------------------------------------
 uint16_t ForceMultipleCoils(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	uint16_t txDataLen = 0;
-	uint16_t writebleRegIndex;
-	uint8_t bitsCounter = 0;		// счетчик для формирования битовых байтов :)
-	uint16_t calledRegsMaxIndex;	// максимальный запрашиваемый индекс регистра
-	uint16_t registerMaxIndex = 0;	// максимальный индекс регистра
-	bool *regsArrayPrt = NULL;		// указатель на массив регистров
-	uint8_t *bytesArrayPtr;			// указатель на данные во входящих данных
-	uint16_t crc16 = 0;
-	
-	
-	t_IncommingDataStructForceMultipleCoils *dataStruct;
-	dataStruct = (t_IncommingDataStructForceMultipleCoils *)rxData;
-	
-	dataStruct->stationId = dataStruct->stationId;
-	dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress); 
-	dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
+  uint16_t txDataLen = 0;
+  uint16_t writebleRegIndex;
+  uint8_t bitsCounter = 0;    // СЃС‡РµС‚С‡РёРє РґР»СЏ С„РѕСЂРјРёСЂРѕРІР°РЅРёСЏ Р±РёС‚РѕРІС‹С… Р±Р°Р№С‚РѕРІ :)
+  uint16_t calledRegsMaxIndex;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t registerMaxIndex = 0;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  bool *regsArrayPrt = NULL;    // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РјР°СЃСЃРёРІ СЂРµРіРёСЃС‚СЂРѕРІ
+  uint8_t *bytesArrayPtr;      // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РґР°РЅРЅС‹Рµ РІРѕ РІС…РѕРґСЏС‰РёС… РґР°РЅРЅС‹С…
+  uint16_t crc16 = 0;
+  
+  
+  t_IncommingDataStructForceMultipleCoils *dataStruct;
+  dataStruct = (t_IncommingDataStructForceMultipleCoils *)rxData;
+  
+  dataStruct->stationId = dataStruct->stationId;
+  dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress); 
+  dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
 
-	// максимальный номер крайнего запрашиваемого регистра с учетом количества регистров
-	calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
-	
-	if(dataStruct->functionCode == CMDForceMultipleCoils)//CMDForceSingleCoil
-	{ 
-		regsArrayPrt = ModBusHandler.CoilForcesRegistersPtr;
-		registerMaxIndex = ModBusHandler.CoilForcesRegistersSize;
-	}
-	
-	if(regsArrayPrt == NULL)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
-	// проверка индекса первого запрашиваемого регистра, что он входит в запрашиваемый диапазон
-	if(dataStruct->firstRegAddress > registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
-	// проверка, что индекс крайнего запрашиаемого регистра входит в диапазон регистров
-	if(calledRegsMaxIndex > registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
-	
-	txData[txDataLen++] = dataStruct->stationId;
-	txData[txDataLen++] = dataStruct->functionCode;
+  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РЅРѕРјРµСЂ РєСЂР°Р№РЅРµРіРѕ Р·Р°РїСЂР°С€РёРІР°РµРјРѕРіРѕ СЂРµРіРёСЃС‚СЂР° СЃ СѓС‡РµС‚РѕРј РєРѕР»РёС‡РµСЃС‚РІР° СЂРµРіРёСЃС‚СЂРѕРІ
+  calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
+  
+  if(dataStruct->functionCode == CMDForceMultipleCoils)//CMDForceSingleCoil
+  { 
+    regsArrayPrt = ModBusHandler.CoilForcesRegistersPtr;
+    registerMaxIndex = ModBusHandler.CoilForcesRegistersSize;
+  }
+  
+  if(regsArrayPrt == NULL)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
+  // РїСЂРѕРІРµСЂРєР° РёРЅРґРµРєСЃР° РїРµСЂРІРѕРіРѕ Р·Р°РїСЂР°С€РёРІР°РµРјРѕРіРѕ СЂРµРіРёСЃС‚СЂР°, С‡С‚Рѕ РѕРЅ РІС…РѕРґРёС‚ РІ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РґРёР°РїР°Р·РѕРЅ
+  if(dataStruct->firstRegAddress > registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
+  // РїСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РёРЅРґРµРєСЃ РєСЂР°Р№РЅРµРіРѕ Р·Р°РїСЂР°С€РёР°РµРјРѕРіРѕ СЂРµРіРёСЃС‚СЂР° РІС…РѕРґРёС‚ РІ РґРёР°РїР°Р·РѕРЅ СЂРµРіРёСЃС‚СЂРѕРІ
+  if(calledRegsMaxIndex > registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
+  
+  txData[txDataLen++] = dataStruct->stationId;
+  txData[txDataLen++] = dataStruct->functionCode;
 
-	txData[txDataLen++] = dataStruct->firstRegAddress>>8;
-	txData[txDataLen++] = dataStruct->firstRegAddress & 0xFF;
-	
-	bytesArrayPtr = &dataStruct->firstDataByte;
-	for(writebleRegIndex = dataStruct->firstRegAddress; writebleRegIndex < calledRegsMaxIndex; ++writebleRegIndex)
-	{	
-		regsArrayPrt[writebleRegIndex] = ((*bytesArrayPtr) & (1<<bitsCounter)) ? (true) : (false);
-		++bitsCounter;
-		if(bitsCounter == 8)
-		{ 
-			bitsCounter = 0;
-			++bytesArrayPtr;
-		}
-	}
-	
-	// Coil set/reset value
-	txData[txDataLen++] = dataStruct->registersCount>>8;
-	txData[txDataLen++] = dataStruct->registersCount & 0xFF;
+  txData[txDataLen++] = dataStruct->firstRegAddress>>8;
+  txData[txDataLen++] = dataStruct->firstRegAddress & 0xFF;
+  
+  bytesArrayPtr = &dataStruct->firstDataByte;
+  for(writebleRegIndex = dataStruct->firstRegAddress; writebleRegIndex < calledRegsMaxIndex; ++writebleRegIndex)
+  {  
+    regsArrayPrt[writebleRegIndex] = ((*bytesArrayPtr) & (1<<bitsCounter)) ? (true) : (false);
+    ++bitsCounter;
+    if(bitsCounter == 8)
+    { 
+      bitsCounter = 0;
+      ++bytesArrayPtr;
+    }
+  }
+  
+  // Coil set/reset value
+  txData[txDataLen++] = dataStruct->registersCount>>8;
+  txData[txDataLen++] = dataStruct->registersCount & 0xFF;
 
-	crc16 = CalcCrc16(txData,txDataLen);
-	txData[txDataLen++] = crc16 & 0xFF;
-	txData[txDataLen++] = crc16>>8;
-	
-	return txDataLen;
+  crc16 = CalcCrc16(txData,txDataLen);
+  txData[txDataLen++] = crc16 & 0xFF;
+  txData[txDataLen++] = crc16>>8;
+  
+  return txDataLen;
 }
 // ----------------------------------------------------------------------------
 uint16_t PresetRegisters(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	uint16_t txDataLen = 0;
-	uint16_t writebleRegIndex;
-	uint16_t calledRegsMaxIndex;	// максимальный запрашиваемый индекс регистра
-	uint16_t registerMaxIndex = 0;	// максимальный индекс регистра
-	uint16_t *regsArrayPrt = NULL;		// указатель на массив регистров
-	uint8_t *bytesArrayPtr;			// указатель на данные во входящих данных
-	uint16_t crc16 = 0;
-	
-	
-	t_IncommingDataStructForceMultipleCoils *dataStruct;
-	dataStruct = (t_IncommingDataStructForceMultipleCoils *)rxData;
-	
-	dataStruct->stationId = dataStruct->stationId;
-	dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress); 
-//	dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
+  uint16_t txDataLen = 0;
+  uint16_t writebleRegIndex;
+  uint16_t calledRegsMaxIndex;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t registerMaxIndex = 0;  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ СЂРµРіРёСЃС‚СЂР°
+  uint16_t *regsArrayPrt = NULL;    // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РјР°СЃСЃРёРІ СЂРµРіРёСЃС‚СЂРѕРІ
+  uint8_t *bytesArrayPtr;      // СѓРєР°Р·Р°С‚РµР»СЊ РЅР° РґР°РЅРЅС‹Рµ РІРѕ РІС…РѕРґСЏС‰РёС… РґР°РЅРЅС‹С…
+  uint16_t crc16 = 0;
+  
+  
+  t_IncommingDataStructForceMultipleCoils *dataStruct;
+  dataStruct = (t_IncommingDataStructForceMultipleCoils *)rxData;
+  
+  dataStruct->stationId = dataStruct->stationId;
+  dataStruct->firstRegAddress = Uint16ByteSwap(dataStruct->firstRegAddress); 
+//  dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
 
-	// максимальный номер крайнего запрашиваемого регистра с учетом количества регистров
-	if(dataStruct->functionCode == CMDPresetSingleRegister)
-	{
-		calledRegsMaxIndex = dataStruct->firstRegAddress + 1;
-		bytesArrayPtr = (uint8_t*)&dataStruct->registersCount;
-	}
-	if(dataStruct->functionCode == CMDPresetMultipleRegisters)
-	{
-		dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
-		calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
-		bytesArrayPtr = &dataStruct->firstDataByte;
-	}
-	
-	regsArrayPrt = ModBusHandler.PresetRegistersPtr;
-	registerMaxIndex = ModBusHandler.PresetRegistersSize;
-	
-	if(regsArrayPrt == NULL)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
-	// проверка, что индекс крайнего запрашиаемого регистра входит в диапазон регистров
-	if(calledRegsMaxIndex > registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
-	// проверка индекса первого запрашиваемого регистра, что он входит в запрашиваемый диапазон
-	if(dataStruct->firstRegAddress > registerMaxIndex)
-	{ return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
-	
-	txData[txDataLen++] = dataStruct->stationId;
-	txData[txDataLen++] = dataStruct->functionCode;
+  // РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РЅРѕРјРµСЂ РєСЂР°Р№РЅРµРіРѕ Р·Р°РїСЂР°С€РёРІР°РµРјРѕРіРѕ СЂРµРіРёСЃС‚СЂР° СЃ СѓС‡РµС‚РѕРј РєРѕР»РёС‡РµСЃС‚РІР° СЂРµРіРёСЃС‚СЂРѕРІ
+  if(dataStruct->functionCode == CMDPresetSingleRegister)
+  {
+    calledRegsMaxIndex = dataStruct->firstRegAddress + 1;
+    bytesArrayPtr = (uint8_t*)&dataStruct->registersCount;
+  }
+  if(dataStruct->functionCode == CMDPresetMultipleRegisters)
+  {
+    dataStruct->registersCount = Uint16ByteSwap(dataStruct->registersCount);
+    calledRegsMaxIndex = (dataStruct->firstRegAddress + dataStruct->registersCount);
+    bytesArrayPtr = &dataStruct->firstDataByte;
+  }
+  
+  regsArrayPrt = ModBusHandler.PresetRegistersPtr;
+  registerMaxIndex = ModBusHandler.PresetRegistersSize;
+  
+  if(regsArrayPrt == NULL)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_FUNCTION_CODE_CANNOT_PROCESSED); }
+  // РїСЂРѕРІРµСЂРєР°, С‡С‚Рѕ РёРЅРґРµРєСЃ РєСЂР°Р№РЅРµРіРѕ Р·Р°РїСЂР°С€РёР°РµРјРѕРіРѕ СЂРµРіРёСЃС‚СЂР° РІС…РѕРґРёС‚ РІ РґРёР°РїР°Р·РѕРЅ СЂРµРіРёСЃС‚СЂРѕРІ
+  if(calledRegsMaxIndex > registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_REQUEST_VALUE_NOT_VALID); }
+  // РїСЂРѕРІРµСЂРєР° РёРЅРґРµРєСЃР° РїРµСЂРІРѕРіРѕ Р·Р°РїСЂР°С€РёРІР°РµРјРѕРіРѕ СЂРµРіРёСЃС‚СЂР°, С‡С‚Рѕ РѕРЅ РІС…РѕРґРёС‚ РІ Р·Р°РїСЂР°С€РёРІР°РµРјС‹Р№ РґРёР°РїР°Р·РѕРЅ
+  if(dataStruct->firstRegAddress > registerMaxIndex)
+  { return ErrorRequest(txData, txBufSize, rxData, ERROR_DATA_ADDRESS_NOT_AVAILABLE); }
+  
+  txData[txDataLen++] = dataStruct->stationId;
+  txData[txDataLen++] = dataStruct->functionCode;
 
-	txData[txDataLen++] = dataStruct->firstRegAddress>>8;
-	txData[txDataLen++] = dataStruct->firstRegAddress & 0xFF;
-	
-	for(writebleRegIndex = dataStruct->firstRegAddress; writebleRegIndex < calledRegsMaxIndex; ++writebleRegIndex)
-	{	
-		regsArrayPrt[writebleRegIndex] = (uint16_t)(*bytesArrayPtr++)<<8;
-		regsArrayPrt[writebleRegIndex] |= (uint16_t)((*(bytesArrayPtr++)) & 0xFF);
-	}
-	
-	// Coil set/reset value
-	if(dataStruct->functionCode == CMDPresetSingleRegister)
-	{
-		txData[txDataLen++] = regsArrayPrt[dataStruct->firstRegAddress]>>8;
-		txData[txDataLen++] = regsArrayPrt[dataStruct->firstRegAddress] & 0xFF;		
-	}
-	if(dataStruct->functionCode == CMDPresetMultipleRegisters)
-	{
-		txData[txDataLen++] = dataStruct->registersCount>>8;
-		txData[txDataLen++] = dataStruct->registersCount & 0xFF;
-	}
+  txData[txDataLen++] = dataStruct->firstRegAddress>>8;
+  txData[txDataLen++] = dataStruct->firstRegAddress & 0xFF;
+  
+  for(writebleRegIndex = dataStruct->firstRegAddress; writebleRegIndex < calledRegsMaxIndex; ++writebleRegIndex)
+  {  
+    regsArrayPrt[writebleRegIndex] = (uint16_t)(*bytesArrayPtr++)<<8;
+    regsArrayPrt[writebleRegIndex] |= (uint16_t)((*(bytesArrayPtr++)) & 0xFF);
+  }
+  
+  // Coil set/reset value
+  if(dataStruct->functionCode == CMDPresetSingleRegister)
+  {
+    txData[txDataLen++] = regsArrayPrt[dataStruct->firstRegAddress]>>8;
+    txData[txDataLen++] = regsArrayPrt[dataStruct->firstRegAddress] & 0xFF;    
+  }
+  if(dataStruct->functionCode == CMDPresetMultipleRegisters)
+  {
+    txData[txDataLen++] = dataStruct->registersCount>>8;
+    txData[txDataLen++] = dataStruct->registersCount & 0xFF;
+  }
 
-	crc16 = CalcCrc16(txData,txDataLen);
-	txData[txDataLen++] = crc16 & 0xFF;
-	txData[txDataLen++] = crc16>>8;
-	
-	return txDataLen;	
+  crc16 = CalcCrc16(txData,txDataLen);
+  txData[txDataLen++] = crc16 & 0xFF;
+  txData[txDataLen++] = crc16>>8;
+  
+  return txDataLen;  
 }
 // ----------------------------------------------------------------------------
 uint16_t PresetSingleRegister(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	return PresetRegisters(txData, txBufSize, rxData);
+  return PresetRegisters(txData, txBufSize, rxData);
 }
 // ----------------------------------------------------------------------------
 uint16_t PresetMultipleRegisters(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData)
 {
-	return PresetRegisters(txData, txBufSize, rxData);
+  return PresetRegisters(txData, txBufSize, rxData);
 }
 // ----------------------------------------------------------------------------
 uint16_t ErrorRequest(uint8_t *txData, uint16_t txBufSize, uint8_t *rxData, uint8_t errorCode)
 {
-	uint16_t txDataLen = 0;
-	uint16_t crc16 = 0;
-	
-	t_IncommingDataStruct *dataStruct = (t_IncommingDataStruct *)rxData;
-	
-	txData[txDataLen++] = dataStruct->stationId;
-	txData[txDataLen++] = dataStruct->functionCode | 0x80;
+  uint16_t txDataLen = 0;
+  uint16_t crc16 = 0;
+  
+  t_IncommingDataStruct *dataStruct = (t_IncommingDataStruct *)rxData;
+  
+  txData[txDataLen++] = dataStruct->stationId;
+  txData[txDataLen++] = dataStruct->functionCode | 0x80;
 
-	txData[txDataLen++] = errorCode;
-	
-	crc16 = CalcCrc16(txData,txDataLen);
-	txData[txDataLen++] = crc16 & 0xFF;
-	txData[txDataLen++] = crc16>>8;
-	
-	return txDataLen;
+  txData[txDataLen++] = errorCode;
+  
+  crc16 = CalcCrc16(txData,txDataLen);
+  txData[txDataLen++] = crc16 & 0xFF;
+  txData[txDataLen++] = crc16>>8;
+  
+  return txDataLen;
 }
 // ----------------------------------------------------------------------------
-// здесь происходит отправка данных используя CallBack модуля отправки(Uart, Can, Ethernet и т.д.)
+// Р·РґРµСЃСЊ РїСЂРѕРёСЃС…РѕРґРёС‚ РѕС‚РїСЂР°РІРєР° РґР°РЅРЅС‹С… РёСЃРїРѕР»СЊР·СѓСЏ CallBack РјРѕРґСѓР»СЏ РѕС‚РїСЂР°РІРєРё(Uart, Can, Ethernet Рё С‚.Рґ.)
 void ModBusSendData(uint8_t *txData, uint16_t txDataLen)
 {
-	if(ModBusHandler._sendByte != NULL)
-	{ ModBusHandler._sendByte(txData, txDataLen); }
+  if(ModBusHandler._sendByte != NULL)
+  { ModBusHandler._sendByte(txData, txDataLen); }
 }
 // ----------------------------------------------------------------------------

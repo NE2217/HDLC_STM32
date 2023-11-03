@@ -117,18 +117,21 @@ typedef struct
 {
   uint8_t type;
   uint8_t data;
-}t_cont;//формат контрольного слова для передачи
+} t_cont;//формат контрольного слова для передачи
 
-typedef union {
+typedef union 
+{
   uint16_t point;
-  struct {
+  struct 
+  {
     unsigned size : 11;  // TODO переделать все uint16_t в unsigned. Перепроверь все свои битовые поля
     unsigned S : 1;    //Ответ: При использовании unsigned, выделяется 4 байта под созданный тип
     unsigned typ : 4;
-  }form;
-}t_format;
+  } form;
+} t_format;
 
-typedef struct {
+typedef struct 
+{
   uint8_t flag_open;
   t_format format;
   uint8_t DA_SA[5];//адрес назначения/источника

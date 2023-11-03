@@ -129,19 +129,19 @@ void HDLC_ProtocolMain(void)
 
   if ( !WaitingForResponse || (IsBufstat() == BUFF_IS_FULL) )
   {
-   switch(Status)
+    switch(Status)
     {
       case NONE:
-        HDLC_PackAdr(2544, 0x20);
-        HDLC_UnPackAdr(2544, 0x20);
+        HDLC_PackAdr(2544, 0x20); // TODO
+        HDLC_UnPackAdr(2544, 0x20); // TODO
         Status = SEND_CONFIG_PARAM;
         TimeOutReset();
         break;
       case SEND_CONFIG_PARAM:
-        HDLC_PackSendConfigParam(Parameters.uartSendDataCB);
+        HDLC_PackSendConfigParam(Parameters.uartSendDataCB); // TODO сделать функцию обёртку для указателя на uartSendDataCB с проверкой указателя на NULL
         Status = WAIT_CONFIG_PARAM_ANSWER;
-        TimeOutReset();
-        WaitingForResponse = true;
+        TimeOutReset(); // TODO перенести в обёртку для uartSendDataCB
+        WaitingForResponse = true; // TODO перенести в обёртку для uartSendDataCB
         break;
 
       case WAIT_CONFIG_PARAM_ANSWER:
@@ -155,7 +155,7 @@ void HDLC_ProtocolMain(void)
           Status = NONE;
         break;
       case SEND_AUTHORIZATION:
-        HDLC_PackSendAuthorization(Parameters.uartSendDataCB, NRS++);
+        HDLC_PackSendAuthorization(Parameters.uartSendDataCB, NRS++); // TODO сделать отдельную функцию или макрос для рассчёте NRS (GetNextNRS())
         Status = WAIT_AUTHORIZATION_ANSWER;
         WaitingForResponse = true;
         TimeOutReset();
@@ -169,6 +169,7 @@ void HDLC_ProtocolMain(void)
         }
         break;
       case SEND_COMAND:
+//        if(Param_pos >= NUMBER_OF_PARAMETERS) Param_pos = 0; // 
         HDLC_PackSendComand(NRS++,Parameters.uartSendDataCB, Param_pos);
         Status =  WAIT_COMAND_ANSWER;
         TimeOutReset();
@@ -180,7 +181,7 @@ void HDLC_ProtocolMain(void)
         Status = SEND_COMAND;
         WaitingForResponse = false;
         BufReset();
-        if(Param_pos > NUMBER_OF_PARAMETERS-1) Param_pos=0;
+        if(Param_pos > NUMBER_OF_PARAMETERS-1) Param_pos=0; // TODO перенести в case SEND_COMAND:
         break;
       case SEND_DISCONNECT:
         HDLC_PackDisconnect(Parameters.uartSendDataCB);
@@ -224,9 +225,9 @@ void HDLC_ProtocolInit(t_InitParams *init)
   LocalTime = Parameters.getTicksCB();
   memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
   
-  Parameters.max_cadr_reception_data = DEFAULT_MAX_CADR_RECEPTION_DATA;
-  Parameters.max_cadr_transmission_data = DEFAULT_MAX_CADR_TRANSMISSION_DATA;
-  Parameters.max_window_reception_data = DEFAULT_MAX_WINDOW_RECEPTION_DATA;
+  Parameters.max_cadr_reception_data      = DEFAULT_MAX_CADR_RECEPTION_DATA;
+  Parameters.max_cadr_transmission_data   = DEFAULT_MAX_CADR_TRANSMISSION_DATA;
+  Parameters.max_window_reception_data    = DEFAULT_MAX_WINDOW_RECEPTION_DATA;
   Parameters.max_window_transmission_data = DEFAULT_MAX_WINDOW_TRANSMISSION_DATA;
   
   Rep_current_A = 0;
@@ -255,7 +256,7 @@ bool IsConnect(void)
 {
   return Connect;
 }
-
+//----------------------------------------------------------------------------
 void BufReset(void)
 {
   BufStat = BUFF_IS_EMPTY;
@@ -266,14 +267,14 @@ t_GetBuf_status IsBufstat(void)
 {
   return BufStat;
 }
-
+//----------------------------------------------------------------------------
 void TimeOutReset(void)
 {
   StartTimeoutCounter = Parameters.getTicksCB();
   Timeout = false;
 }
-
-bool IsTimeOut(void)
+//----------------------------------------------------------------------------
+bool IsTimeOut(void) // TODO rename IsRxTimeOut
 {
   uint32_t time = Parameters.getTicksCB();
 
@@ -287,6 +288,7 @@ bool IsTimeOut(void)
   }
   return Timeout;
 }
+//----------------------------------------------------------------------------
 void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
 {
   if( IsBufstat() == BUFF_IS_EMPTY )
@@ -314,69 +316,83 @@ void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
   }  
 }
 // --------------------------------Показания----------------------------------
-
 float GetVoltageA(void)
 {
   return Rep_volt_A;
 }
-
+//----------------------------------------------------------------------------
 float GetVoltageB(void)
 {
   return Rep_volt_B;
 }
+//----------------------------------------------------------------------------
 float GetVoltageC(void)
 {
   return Rep_volt_C;
 }
+//----------------------------------------------------------------------------
 float GetCurrentA(void)
 {
   return Rep_current_A;
 }
+//----------------------------------------------------------------------------
 float GetCurrentB(void)
 {
   return Rep_current_B;
 }
+//----------------------------------------------------------------------------
 float GetCurrentC(void)
 {
   return Rep_current_C;
 }
+//----------------------------------------------------------------------------
 float GetPowerA(void)
 {
   return 0;
 }
+//----------------------------------------------------------------------------
 float GetPowerB(void)
 {
   return 0;
 }
+//----------------------------------------------------------------------------
 float GetPowerC(void)
 {
   return 0;
 }
+//----------------------------------------------------------------------------
 float GetSumPowerApparent(void)
 {
   return Rep_sum_S;
 }
+//----------------------------------------------------------------------------
 float GetSumPowerActive(void)
 {
   return Rep_sum_P;
 }
+//----------------------------------------------------------------------------
 float GetSumPowerReactive(void)
 {
   return Rep_sum_Q;
 }
+//----------------------------------------------------------------------------
 float GetCosFi(void)
 {
   return Rep_cos_f;
 }
+//----------------------------------------------------------------------------
 int64_t GetEnergyActiveImport(void)
 {
   return Rep_activ_energy_import;
 }
+//----------------------------------------------------------------------------
 int64_t GetEnergyReactiveImport(void)
 {
   return Rep_reactiv_energy_import;
 }
+//----------------------------------------------------------------------------
 int64_t GetEnergyApparentImport(void)
 {
   return Rep_apparent_energy_import;
 }
+//----------------------------------------------------------------------------
