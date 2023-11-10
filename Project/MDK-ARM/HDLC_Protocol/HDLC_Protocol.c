@@ -5,12 +5,13 @@
 #include "HDLC_unpack.h"
 #include "HDLC_pack.h"
 
-#define POLLING_TIME             200u
+#define POLLING_TIME             300u
 #define TIMEOUT                  2000u
 #define SEND_BUF_SIZE            100u
 #define GET_BUF_SIZE             100u
 #define SEND_AUTHORIZATION_SIZE  100u
 #define NUMBER_OF_PARAMETERS     13
+#define DEFAULT_PASWOR           "12345678"
 
 typedef enum
 {
@@ -51,6 +52,7 @@ uint32_t StartTimeoutCounter;
 t_GetBuf_status BufStat;
 t_protocol_status Status;
 t_InitParams Parameters;
+t_HDLCservParam ServParam; 
 //--------------------------------------------------------------------------------
 float Rep_current_A;
 float Rep_current_B;
@@ -75,6 +77,7 @@ uint8_t Param_pos = 0;
 //--------------------------------------------------------------------------------
 uint8_t NRS=0;
 uint8_t authorize_msg[] = {0,0,0,0,0,0};
+t_HDLCservParam ServParam;
 
 uint8_t HDLC_SendBuf[SEND_BUF_SIZE];
 uint8_t HDLC_GetBuf[GET_BUF_SIZE];
@@ -132,8 +135,8 @@ void HDLC_ProtocolMain(void)
     switch(Status)
     {
       case NONE:
-        HDLC_PackAdr(2544, 0x20); // TODO
-        HDLC_UnPackAdr(2544, 0x20); // TODO
+        HDLC_PackAdr(ServParam.Adr, 0x20); // TODO
+        HDLC_UnPackAdr(ServParam.Adr, 0x20); // TODO
         Status = SEND_CONFIG_PARAM;
         TimeOutReset();
         break;
@@ -155,7 +158,7 @@ void HDLC_ProtocolMain(void)
           Status = NONE;
         break;
       case SEND_AUTHORIZATION:
-        HDLC_PackSendAuthorization(Parameters.uartSendDataCB, NRS++); // TODO сделать отдельную функцию или макрос для рассчёте NRS (GetNextNRS())
+        HDLC_PackSendAuthorization(Parameters.uartSendDataCB, NRS++, ServParam.password); // TODO сделать отдельную функцию или макрос для рассчёте NRS (GetNextNRS())
         Status = WAIT_AUTHORIZATION_ANSWER;
         WaitingForResponse = true;
         TimeOutReset();
@@ -224,7 +227,7 @@ void HDLC_ProtocolInit(t_InitParams *init)
   memcpy(&Parameters, init, sizeof(t_InitParams));
   LocalTime = Parameters.getTicksCB();
   memset(HDLC_SendBuf, 0, SEND_BUF_SIZE);
-  
+
   Parameters.max_cadr_reception_data      = DEFAULT_MAX_CADR_RECEPTION_DATA;
   Parameters.max_cadr_transmission_data   = DEFAULT_MAX_CADR_TRANSMISSION_DATA;
   Parameters.max_window_reception_data    = DEFAULT_MAX_WINDOW_RECEPTION_DATA;
@@ -243,8 +246,9 @@ void HDLC_ProtocolInit(t_InitParams *init)
   Rep_activ_energy_import = 0;
   Rep_reactiv_energy_import = 0;
   Rep_apparent_energy_import = 0;
-// TODO  NRS=1; 
-//  void TimeOutReset(void);
+  WaitingForResponse = false;
+//  NRS=0; 
+//  TimeOutReset();
 }
 //-----------------------------------------------------------------------------
 void HDLC_ProtocolPackAuthorization(uint8_t pasword)
@@ -313,8 +317,10 @@ void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
       GetBufHead++;
     }
    }
-  }  
+  }
 }
+// --------------------------------Пароль и адрес----------------------------------
+
 // --------------------------------Показания----------------------------------
 float GetVoltageA(void)
 {
@@ -394,5 +400,15 @@ int64_t GetEnergyReactiveImport(void)
 int64_t GetEnergyApparentImport(void)
 {
   return Rep_apparent_energy_import;
+}
+//----------------------------------------------------------------------------
+void HDLCservParamSET(t_HDLCservParam Param, uint8_t N_serv)
+{
+  memcpy(&ServParam, &Param, sizeof(t_HDLCservParam));
+}
+//----------------------------------------------------------------------------
+t_HDLCservParam HDLCservParamGET(uint8_t N_serv)
+{
+  return ServParam;
 }
 //----------------------------------------------------------------------------

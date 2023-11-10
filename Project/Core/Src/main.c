@@ -90,6 +90,7 @@ typedef struct
   uint16_t ServAdr_4;
   uint16_t ServPasword_4[4];
 }t_MB_Preset_Registers;
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -106,7 +107,7 @@ DMA_HandleTypeDef hdma_usart2_tx;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
-// TODO глоюальные переменные пишем с большой буквы
+// TODO глобальные переменные пишем с большой буквы
 uint8_t Rx_buf_HDLC[BUF_LEN] = {0};
 uint8_t Tx_buf_HDLC[BUF_LEN] = {0};
 uint8_t Rxel_HDLC = 0;
@@ -119,9 +120,12 @@ uint8_t Txel_MB = 0;
 uint16_t SendRegMB [100] = {0};
 int64_t TES = 0;
 //-----------------------------TEST_VARIABLES-------------------------------------
-uint16_t Test_1=0;
+uint32_t Test_1=0;
 uint16_t Test_2=0;
 uint32_t readData[2] = {0, 0};
+uint32_t eeprom_buf;
+t_HDLCservParam Serv;
+bool ChangeServParam = false;
 //--------------------------------------------------------------------------------
 /* USER CODE END PV */
 
@@ -139,13 +143,13 @@ static void MX_USART2_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 // ----------------------------------------------------------------------------
-  void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if(htim->Instance == TIM1)
   {
-        if(htim->Instance == TIM1)
-        {
-                HAL_GPIO_TogglePin(LED_PIN_GPIO_Port, LED_PIN_Pin); 
-        }
+    HAL_GPIO_TogglePin(LED_PIN_GPIO_Port, LED_PIN_Pin); 
   }
+}
 // ----------------------------------------------------------------------------
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -217,7 +221,7 @@ void f_invertFourWords(void* data)
   *buf = (*buf >> 48) | ( (*buf >> 16) & 0xffff0000 ) | ( (*buf << 16) & 0xffff00000000 ) | (*buf << 48);
 }
 // ----------------------------------------------------------------------------
-  t_MB_Preset_Registers HDLC_to_MB_Preset;
+
 // ----------------------------------------------------------------------------
 /* USER CODE END 0 */
 
@@ -229,10 +233,12 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
   t_MB_Holding_registers HDLC_to_MB_Holding;
+  t_MB_Preset_Registers HDLC_to_MB_Preset;//, HDLC_to_MB_Preset_Control; стоит ли
   t_typeflConvert HDLC_to_MB_fl;
   t_typeI64Convert HDLC_to_MB_i64;
-
-
+  
+//  t_HDLCservParam Serv;__________________________________________Вынесено в тест 
+//  uint32_t FLASH_BUF = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -267,16 +273,15 @@ int main(void)
   t_modbus_init_struct initMB;
 //------------------------------------HDLC_INIT------------------------------------
   HDLC_ProtocolInitParamsStructureReset(&initHDLC);
-
-  initHDLC.server_address = DEFAULT_SERVER_ADDRESS;//HDLC_to_MB_Preset.ServAdr_1;
-  initHDLC.client_address = DEFAULT_CLIENT_ADDRESS;
-  memcpy(initHDLC.pasword, (uint8_t*)HDLC_to_MB_Preset.ServPasword_1, 8);
+//  initHDLC.server_address = DEFAULT_SERVER_ADDRESS;//HDLC_to_MB_Preset.ServAdr_1;
+//  initHDLC.client_address = DEFAULT_CLIENT_ADDRESS;
+//  memcpy(initHDLC.pasword, (uint8_t*)HDLC_to_MB_Preset.ServPasword_1, 8);
 
   initHDLC.uartSendDataCB = UartSendDataHDLC;
   initHDLC.getTicksCB = HAL_GetTick;
 
   HDLC_ProtocolInit(&initHDLC);
-//---------------------------------------MB_INIT-----------------------------------
+//--------------------------------------MB_INIT------------------------------------
   initMB.stationId = 1;
   initMB._GetTicks100Mks = HAL_GetTick;
   initMB._sendByte = UartSendDataMB;
@@ -285,29 +290,112 @@ int main(void)
 
   initMB.PresetRegistersPtr = (uint16_t*)&HDLC_to_MB_Preset;
   initMB.PresetRegistersSize = 21;
-  
+
   ModBusInit(&initMB);
 //--------------------------------------EEPROM_INIT--------------------------------
   EEPROM_Init();
-  
-//  EEPROM_Write(PARAM_1, 0x1111);
-//  EEPROM_Write(PARAM_2, 0x2222);
+//  uint32_t eeprom_buf;_____________________________________________Вынесен в ТЕСТ
+/*
+  EEPROM_Write(PARAM_1, 0xF);
+  EEPROM_Write(PARAM_2, 0xF0F0F0F0);
+  EEPROM_Write(PARAM_3, 0xF0F0F0F0);
+*/
+  EEPROM_Read(PARAM_1, &eeprom_buf);
+  if (Serv.Adr != eeprom_buf)
+  {
+    Serv.Adr = eeprom_buf;
+  }
 
-  EEPROM_Read(PARAM_1, &readData[0]);
-  EEPROM_Read(PARAM_2, &readData[1]);
-  
-//  EEPROM_Write(PARAM_2, 0x3333);
-//  EEPROM_Read(PARAM_1, &readData[0]);
-//  EEPROM_Read(PARAM_2, &readData[1]);
+  EEPROM_Read(PARAM_2, &eeprom_buf);
+  if (memcmp(&Serv.password[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+  {
+    memcpy(&Serv.password[0], &eeprom_buf, sizeof(eeprom_buf));
+  }
+
+  EEPROM_Read(PARAM_3, &eeprom_buf);
+  if (memcmp(&Serv.password[4], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+  {
+    memcpy(&Serv.password[4], &eeprom_buf, sizeof(eeprom_buf));
+  }
+  HDLCservParamSET(Serv, 0);
+//  EEPROM_Write(PARAM_1, 0x1234);
+//  EEPROM_Write(PARAM_2, 0x4321);
+//  EEPROM_Read(PARAM_1, HDLC_to_MB_Preset.NumServ);
+/*
+  if(HDLC_to_MB_Preset.NumServ != 0)
+  {
+    EEPROM_Read(PARAM_1, &FLASH_BUF);
+    if(HDLC_to_MB_Preset.NumServ != FLASH_BUF)
+    {
+      EEPROM_Write(PARAM_1, HDLC_to_MB_Preset.NumServ);
+    }
+    
+    EEPROM_Read(PARAM_2, &FLASH_BUF);
+    if(HDLC_to_MB_Preset.ServAdr_1 != FLASH_BUF)
+    {
+      EEPROM_Write(PARAM_2, HDLC_to_MB_Preset.NumServ);
+    }
+    EEPROM_Read(PARAM_3, &FLASH_BUF);
+    if(memcmp(&HDLC_to_MB_Preset.ServPasword_1[0], &FLASH_BUF, sizeof(FLASH_BUF) ) != 0)
+    {
+      EEPROM_Write(PARAM_3, *(uint32_t*)&HDLC_to_MB_Preset.ServPasword_1[0]);
+    }
+    EEPROM_Read(PARAM_4, &FLASH_BUF);
+    if(memcmp(&HDLC_to_MB_Preset.ServPasword_1[2], &FLASH_BUF, sizeof(FLASH_BUF) ) != 0)
+    {
+      EEPROM_Write(PARAM_4, *(uint32_t*)&HDLC_to_MB_Preset.ServPasword_1[2]);
+    }
+  }
+*/
 //--------------------------------------------------------------------------------
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  
   while (1)
   {
-    HDLC_ProtocolMain();
     ModBusRun();
+
+    Serv = HDLCservParamGET(0);
+    if(HDLC_to_MB_Preset.NumServ != 0)
+    {
+      EEPROM_Read(PARAM_1, &eeprom_buf);
+      if (HDLC_to_MB_Preset.ServAdr_1 != eeprom_buf)
+      {
+        Serv.Adr = HDLC_to_MB_Preset.ServAdr_1;
+        EEPROM_Write(PARAM_1, Serv.Adr);
+        ChangeServParam = true;
+      }
+
+      EEPROM_Read(PARAM_2, &eeprom_buf);
+      if (memcmp(&HDLC_to_MB_Preset.ServPasword_1[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+      {
+        memcpy(&Serv.password[0], &HDLC_to_MB_Preset.ServPasword_1[0], sizeof(eeprom_buf));
+        memcpy(&eeprom_buf, &Serv.password[0], sizeof(eeprom_buf));
+        EEPROM_Write(PARAM_2, eeprom_buf);
+        ChangeServParam = true;
+      }
+
+      EEPROM_Read(PARAM_3, &eeprom_buf);
+      if (memcmp(&HDLC_to_MB_Preset.ServPasword_1[2], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+      {
+        memcpy(&Serv.password[4], &HDLC_to_MB_Preset.ServPasword_1[2], sizeof(eeprom_buf));
+        memcpy(&eeprom_buf, &Serv.password[4], sizeof(eeprom_buf));
+        EEPROM_Write(PARAM_3, eeprom_buf);
+        ChangeServParam = true;
+      }
+      
+      if (ChangeServParam)
+      {
+        HDLCservParamSET(Serv, 0);
+        ChangeServParam = false;
+        HDLC_ProtocolInit(&initHDLC);
+      }
+    }
+
+    HDLC_ProtocolMain();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

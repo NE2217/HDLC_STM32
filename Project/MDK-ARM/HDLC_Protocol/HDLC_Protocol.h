@@ -88,31 +88,6 @@ typedef struct
   uint32_t (*getTicksCB)(void);
 }t_InitParams;
 
-void HDLC_ProtocolMain(void);
-
-void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init);
-void HDLC_ProtocolInit(t_InitParams *init);
-void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len);
-
-bool IsConnect(void);
-
-float GetVoltageA(void);
-float GetVoltageB(void);
-float GetVoltageC(void);
-float GetCurrentA(void);
-float GetCurrentB(void);
-float GetCurrentC(void);
-//float GetPowerA(void);
-//float GetPowerB(void);
-//float GetPowerC(void);
-float GetSumPowerApparent(void);
-float GetSumPowerActive(void);
-float GetSumPowerReactive(void);
-float GetCosFi(void);
-int64_t GetEnergyActiveImport(void);
-int64_t GetEnergyReactiveImport(void);
-int64_t GetEnergyApparentImport(void);
-
 typedef struct
 {
   uint8_t type;
@@ -125,7 +100,7 @@ typedef union
   struct 
   {
     unsigned size : 11;  // TODO переделать все uint16_t в unsigned. Перепроверь все свои битовые поля
-    unsigned S : 1;    //Ответ: При использовании unsigned, выделяется 4 байта под созданный тип
+    unsigned S : 1;      //Ответ: При использовании unsigned, выделяется 4 байта под созданный тип
     unsigned typ : 4;
   } form;
 } t_format;
@@ -152,7 +127,40 @@ typedef struct
   t_HDLC_packet_end *end;
 } t_HDLC_packet;
 
+typedef struct
+{
+  uint16_t Adr;
+  uint8_t password[8];
+} t_HDLCservParam;
+
 #pragma pack ( pop )
 #pragma no_anon_unions
 
+void HDLC_ProtocolMain(void);
+
+void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init);
+void HDLC_ProtocolInit(t_InitParams *init);
+void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len);
+
+bool IsConnect(void);
+
+float GetVoltageA(void);
+float GetVoltageB(void);
+float GetVoltageC(void);
+float GetCurrentA(void);
+float GetCurrentB(void);
+float GetCurrentC(void);
+//float GetPowerA(void);
+//float GetPowerB(void);
+//float GetPowerC(void);
+float GetSumPowerApparent(void);
+float GetSumPowerActive(void);
+float GetSumPowerReactive(void);
+float GetCosFi(void);
+int64_t GetEnergyActiveImport(void);
+int64_t GetEnergyReactiveImport(void);
+int64_t GetEnergyApparentImport(void);
+
+void HDLCservParamSET(t_HDLCservParam Param, uint8_t N_serv);
+t_HDLCservParam HDLCservParamGET(uint8_t N_serv);
 #endif // !_PROTOCOL_

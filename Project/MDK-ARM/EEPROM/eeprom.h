@@ -22,9 +22,17 @@
 #define PAGE_DATA_OFFSET                                                8
 #define PAGE_DATA_SIZE                                                  8
 
-#define PARAM_1                                                         0x12121212
-#define PARAM_2                                                         0x34343434
-#define VAR_NUM                                                         2
+#define PARAM_1                                                         0x00000001
+#define PARAM_2                                                         0x00000002
+#define PARAM_3                                                         0x00000003
+#define PARAM_4                                                         0x00000004
+#define PARAM_5                                                         0x00000005
+#define PARAM_6                                                         0x00000006
+#define PARAM_7                                                         0x00000007
+#define PARAM_8                                                         0x00000008
+#define PARAM_9                                                         0x00000009
+#define PARAM_10                                                        0x00000010
+#define VAR_NUM                                                         10
 
 #define PAGE_0_ADDRESS                                                  0x0801F800
 #define PAGE_1_ADDRESS                                                  0x0801FC00
@@ -56,7 +64,6 @@ typedef enum {
 extern EepromResult EEPROM_Init(void);
 extern EepromResult EEPROM_Read(uint32_t varId, uint32_t *varValue);
 extern EepromResult EEPROM_Write(uint32_t varId, uint32_t varValue);
-
-
+uint32_t PARAM(uint8_t num);
 
 #endif // #ifndef EEPROM_H

@@ -17,7 +17,7 @@
 /* Declarations and definitions ----------------------------------------------*/
 
 static uint32_t pageAddress[PAGES_NUM] = {PAGE_0_ADDRESS, PAGE_1_ADDRESS};
-static uint32_t varIdList[VAR_NUM] = {PARAM_1, PARAM_2};
+static uint32_t varIdList[VAR_NUM] = {PARAM_1, PARAM_2, PARAM_3, PARAM_4, PARAM_5, PARAM_6, PARAM_7, PARAM_8, PARAM_9, PARAM_10};
 
 uint32_t FLASH_Read(uint32_t address);
 PageState EEPROM_ReadPageState(PageIdx idx);
@@ -440,4 +440,45 @@ EepromResult EEPROM_Init()
 
 
 
+/******************************************************************************/
+/*
+uint32_t PARAM(uint8_t num)
+{
+  switch (num)
+  {
+    case 1:
+      return PARAM_1;
+      break;
+    case 2:
+      return PARAM_2;
+      break;
+    case 3:
+      return PARAM_3;
+      break;
+    case 4:
+      return PARAM_4;
+      break;
+    case 5:
+      return PARAM_5;
+      break;
+    case 6:
+      return PARAM_6;
+      break;
+    case 7:
+      return PARAM_7;
+      break;
+    case 8:
+      return PARAM_8;
+      break;
+    case 9:
+      return PARAM_9;
+      break;
+    case 10:
+      return PARAM_10;
+      break;
+    default:
+      return 0;
+  };
+}
+*/
 /******************************************************************************/
