@@ -112,12 +112,12 @@ uint32_t GetTicks(void)
   return Parameters.getTicksCB();
 }
 //----------------------------------------------------------------------------
-void HDLC_ProtocolMain(void) 
+uint8_t HDLC_ProtocolMain(void) 
 {
   uint32_t time = Parameters.getTicksCB();
 
   if( (time - LocalTime) < POLLING_TIME )
-    return;
+    return 1; //ошибка времени ответа
   LocalTime = Parameters.getTicksCB();
   
   if( IsTimeOut() )
@@ -128,6 +128,7 @@ void HDLC_ProtocolMain(void)
     NRS = 0;
     Param_pos = 0;
     Connect = false;
+    return 2; //цикл опроса счетчика завершон
   }
 
   if ( !WaitingForResponse || (IsBufstat() == BUFF_IS_FULL) )
@@ -184,8 +185,12 @@ void HDLC_ProtocolMain(void)
         Status = SEND_COMAND;
         WaitingForResponse = false;
         BufReset();
-        if(Param_pos > NUMBER_OF_PARAMETERS-1) Param_pos=0; // TODO перенести в case SEND_COMAND:
-        break;
+        if(Param_pos > NUMBER_OF_PARAMETERS-1)
+        {
+          Param_pos=0; // TODO перенести в case SEND_COMAND:
+          return 2; //цикл опроса счетчика завершон
+        }
+          break;
       case SEND_DISCONNECT:
         HDLC_PackDisconnect(Parameters.uartSendDataCB);
         Status = WAIT_DISCONNECT_ANSWER;
@@ -203,6 +208,7 @@ void HDLC_ProtocolMain(void)
     }
   }
   // если данные отправляются и принимаются нормально, то сброс таймаута
+  return 0; //нормальная работа
 }
 // ----------------------------------------------------------------------------
 //#define NRS_MASK 7u TODO

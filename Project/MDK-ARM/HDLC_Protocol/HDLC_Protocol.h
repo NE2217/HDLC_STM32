@@ -136,7 +136,7 @@ typedef struct
 #pragma pack ( pop )
 #pragma no_anon_unions
 
-void HDLC_ProtocolMain(void);
+uint8_t HDLC_ProtocolMain(void);
 
 void HDLC_ProtocolInitParamsStructureReset(t_InitParams *init);
 void HDLC_ProtocolInit(t_InitParams *init);

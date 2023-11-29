@@ -124,7 +124,7 @@ uint32_t Test_1=0;
 uint16_t Test_2=0;
 uint32_t readData[2] = {0, 0};
 uint32_t eeprom_buf;
-t_HDLCservParam Serv;
+t_HDLCservParam Serv[2];
 bool ChangeServParam = false;
 //--------------------------------------------------------------------------------
 /* USER CODE END PV */
@@ -237,6 +237,7 @@ int main(void)
   t_typeflConvert HDLC_to_MB_fl;
   t_typeI64Convert HDLC_to_MB_i64;
   
+  uint8_t pos_serv=0;
 //  t_HDLCservParam Serv;__________________________________________Вынесено в тест 
 //  uint32_t FLASH_BUF = 0;
   /* USER CODE END 1 */
@@ -300,24 +301,45 @@ int main(void)
   EEPROM_Write(PARAM_2, 0xF0F0F0F0);
   EEPROM_Write(PARAM_3, 0xF0F0F0F0);
 */
+//первый счетчик
   EEPROM_Read(PARAM_1, &eeprom_buf);
-  if (Serv.Adr != eeprom_buf)
+  if (Serv[0].Adr != eeprom_buf)
   {
-    Serv.Adr = eeprom_buf;
+    Serv[0].Adr = eeprom_buf;
   }
 
   EEPROM_Read(PARAM_2, &eeprom_buf);
-  if (memcmp(&Serv.password[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+  if (memcmp(&Serv[0].password[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
   {
-    memcpy(&Serv.password[0], &eeprom_buf, sizeof(eeprom_buf));
+    memcpy(&Serv[0].password[0], &eeprom_buf, sizeof(eeprom_buf));
   }
 
   EEPROM_Read(PARAM_3, &eeprom_buf);
-  if (memcmp(&Serv.password[4], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+  if (memcmp(&Serv[0].password[4], &eeprom_buf, sizeof(eeprom_buf)) != 0)
   {
-    memcpy(&Serv.password[4], &eeprom_buf, sizeof(eeprom_buf));
+    memcpy(&Serv[0].password[4], &eeprom_buf, sizeof(eeprom_buf));
   }
-  HDLCservParamSET(Serv, 0);
+  HDLCservParamSET(Serv[0], 0);
+  
+  //второй счетчик
+    EEPROM_Read(PARAM_4, &eeprom_buf);
+  if (Serv[1].Adr != eeprom_buf)
+  {
+    Serv[1].Adr = eeprom_buf;
+  }
+
+  EEPROM_Read(PARAM_5, &eeprom_buf);
+  if (memcmp(&Serv[1].password[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+  {
+    memcpy(&Serv[1].password[0], &eeprom_buf, sizeof(eeprom_buf));
+  }
+
+  EEPROM_Read(PARAM_6, &eeprom_buf);
+  if (memcmp(&Serv[1].password[4], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+  {
+    memcpy(&Serv[1].password[4], &eeprom_buf, sizeof(eeprom_buf));
+  }
+//  HDLCservParamSET(Serv[1], 0);
 //  EEPROM_Write(PARAM_1, 0x1234);
 //  EEPROM_Write(PARAM_2, 0x4321);
 //  EEPROM_Read(PARAM_1, HDLC_to_MB_Preset.NumServ);
@@ -357,44 +379,101 @@ int main(void)
   {
     ModBusRun();
 
-    Serv = HDLCservParamGET(0);
-    if(HDLC_to_MB_Preset.NumServ != 0)
+    switch (pos_serv)
     {
-      EEPROM_Read(PARAM_1, &eeprom_buf);
-      if (HDLC_to_MB_Preset.ServAdr_1 != eeprom_buf)
+      case 0:
       {
-        Serv.Adr = HDLC_to_MB_Preset.ServAdr_1;
-        EEPROM_Write(PARAM_1, Serv.Adr);
-        ChangeServParam = true;
-      }
+// 1 счетчик
+        Serv[0] = HDLCservParamGET(0);
+        if(HDLC_to_MB_Preset.NumServ != 0)
+        {
+          EEPROM_Read(PARAM_1, &eeprom_buf);
+          if (HDLC_to_MB_Preset.ServAdr_1 != eeprom_buf)
+          {
+            Serv[0].Adr = HDLC_to_MB_Preset.ServAdr_1;
+            EEPROM_Write(PARAM_1, Serv[0].Adr);
+            ChangeServParam = true;
+          }
 
-      EEPROM_Read(PARAM_2, &eeprom_buf);
-      if (memcmp(&HDLC_to_MB_Preset.ServPasword_1[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
-      {
-        memcpy(&Serv.password[0], &HDLC_to_MB_Preset.ServPasword_1[0], sizeof(eeprom_buf));
-        memcpy(&eeprom_buf, &Serv.password[0], sizeof(eeprom_buf));
-        EEPROM_Write(PARAM_2, eeprom_buf);
-        ChangeServParam = true;
-      }
+          EEPROM_Read(PARAM_2, &eeprom_buf);
+          if (memcmp(&HDLC_to_MB_Preset.ServPasword_1[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+          {
+            memcpy(&Serv[0].password[0], &HDLC_to_MB_Preset.ServPasword_1[0], sizeof(eeprom_buf));
+            memcpy(&eeprom_buf, &Serv[0].password[0], sizeof(eeprom_buf));
+            EEPROM_Write(PARAM_2, eeprom_buf);
+            ChangeServParam = true;
+          }
 
-      EEPROM_Read(PARAM_3, &eeprom_buf);
-      if (memcmp(&HDLC_to_MB_Preset.ServPasword_1[2], &eeprom_buf, sizeof(eeprom_buf)) != 0)
-      {
-        memcpy(&Serv.password[4], &HDLC_to_MB_Preset.ServPasword_1[2], sizeof(eeprom_buf));
-        memcpy(&eeprom_buf, &Serv.password[4], sizeof(eeprom_buf));
-        EEPROM_Write(PARAM_3, eeprom_buf);
-        ChangeServParam = true;
+          EEPROM_Read(PARAM_3, &eeprom_buf);
+          if (memcmp(&HDLC_to_MB_Preset.ServPasword_1[2], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+          {
+            memcpy(&Serv[0].password[4], &HDLC_to_MB_Preset.ServPasword_1[2], sizeof(eeprom_buf));
+            memcpy(&eeprom_buf, &Serv[0].password[4], sizeof(eeprom_buf));
+            EEPROM_Write(PARAM_3, eeprom_buf);
+            ChangeServParam = true;
+          }
+          
+          if (ChangeServParam)
+          {
+            HDLCservParamSET(Serv[0], 0);
+            ChangeServParam = false;
+            HDLC_ProtocolInit(&initHDLC);
+          }
+        }
       }
-      
-      if (ChangeServParam)
+      case 1:
       {
-        HDLCservParamSET(Serv, 0);
-        ChangeServParam = false;
-        HDLC_ProtocolInit(&initHDLC);
+// 2 счетчик
+        Serv[1] = HDLCservParamGET(0);
+        if(HDLC_to_MB_Preset.NumServ != 0)
+        {
+          EEPROM_Read(PARAM_4, &eeprom_buf);
+          if (HDLC_to_MB_Preset.ServAdr_2 != eeprom_buf)
+          {
+            Serv[1].Adr = HDLC_to_MB_Preset.ServAdr_2;
+            EEPROM_Write(PARAM_4, Serv[1].Adr);
+            ChangeServParam = true;
+          }
+
+          EEPROM_Read(PARAM_5, &eeprom_buf);
+          if (memcmp(&HDLC_to_MB_Preset.ServPasword_2[0], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+          {
+            memcpy(&Serv[1].password[0], &HDLC_to_MB_Preset.ServPasword_2[0], sizeof(eeprom_buf));
+            memcpy(&eeprom_buf, &Serv[1].password[0], sizeof(eeprom_buf));
+            EEPROM_Write(PARAM_5, eeprom_buf);
+            ChangeServParam = true;
+          }
+
+          EEPROM_Read(PARAM_6, &eeprom_buf);
+          if (memcmp(&HDLC_to_MB_Preset.ServPasword_2[2], &eeprom_buf, sizeof(eeprom_buf)) != 0)
+          {
+            memcpy(&Serv[1].password[4], &HDLC_to_MB_Preset.ServPasword_2[2], sizeof(eeprom_buf));
+            memcpy(&eeprom_buf, &Serv[1].password[4], sizeof(eeprom_buf));
+            EEPROM_Write(PARAM_6, eeprom_buf);
+            ChangeServParam = true;
+          }
+          
+          if (ChangeServParam)
+          {
+            HDLCservParamSET(Serv[1], 0);
+            ChangeServParam = false;
+            HDLC_ProtocolInit(&initHDLC);
+          }
+        }
       }
     }
+if (HDLC_ProtocolMain() == 2)
+{
+  if (pos_serv == 1)
+  {
+    pos_serv=0;
+  }
+  else
+  {
+    pos_serv=1;
+  }
+}
 
-    HDLC_ProtocolMain();
 
     /* USER CODE END WHILE */
 
@@ -405,8 +484,11 @@ int main(void)
     HDLC_to_MB_Holding.CurrentB         = GetCurrentB();
     HDLC_to_MB_Holding.CurrentC         = GetCurrentC();
     HDLC_to_MB_Holding.VoltageA         = GetVoltageA();
-    HDLC_to_MB_Holding.VoltageB         = GetVoltageB();
+if (pos_serv == 0)
+    HDLC_to_MB_Holding.VoltageB         = GetVoltageC();
+if (pos_serv == 1)
     HDLC_to_MB_Holding.VoltageC         = GetVoltageC();
+
     HDLC_to_MB_Holding.SumPowerReactive = GetSumPowerReactive();
     HDLC_to_MB_Holding.SumPowerActive   = GetSumPowerActive();
     HDLC_to_MB_Holding.SumPowerApparent = GetSumPowerApparent();
