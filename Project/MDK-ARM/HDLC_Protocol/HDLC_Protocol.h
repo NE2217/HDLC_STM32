@@ -73,6 +73,21 @@
 //--------------------------------------------------------------------------------
 #pragma pack(push,1)
 #pragma anon_unions
+//Структура для одного счетчика
+typedef struct
+{
+//  uint8_t Num_meter;
+//  uint8_t Meter_pos;
+  uint8_t Meter_ID;
+  uint8_t Meter_pasvord[8];
+  uint8_t Meter_Status;
+  uint8_t WaitingForResponse;
+  uint8_t StartTimeoutCounter;
+  uint8_t NRS;
+  uint8_t Param_pos;
+  uint8_t* GetBuf;
+  uint8_t* SendBuf;
+} t_MeterParam;
 
 typedef struct
 {
@@ -99,8 +114,8 @@ typedef union
   uint16_t point;
   struct 
   {
-    unsigned size : 11;  // TODO переделать все uint16_t в unsigned. Перепроверь все свои битовые поля
-    unsigned S : 1;      //Ответ: При использовании unsigned, выделяется 4 байта под созданный тип
+    unsigned size : 11;
+    unsigned S : 1;
     unsigned typ : 4;
   } form;
 } t_format;

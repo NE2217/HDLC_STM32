@@ -88,14 +88,16 @@ bool RecordingInProgress;
 void HDLC_ConnectAutorization(void);
 void HDLC_SendConnectAutorization_t(uint8_t* SendBuf, void SendData(uint8_t* data, uint16_t data_len));
 bool HDLC_GetConnectAutorization_t(uint8_t* GetBuf);
+bool IsSendDataCB(void);
 
 void TimeOutReset(void);
-bool IsTimeOut(void);
+bool IsRxTimeOut(void);
 void BufReset(void);
 t_GetBuf_status IsBufstat(void);
 
 bool HDLC_SendData(uint8_t *data, uint16_t len); 
 uint32_t GetTicks(void);
+uint8_t GetNextNRS(uint8_t* NRS);
 
 bool HDLC_SendData(uint8_t *data, uint16_t len)
 {
@@ -120,7 +122,7 @@ void HDLC_ProtocolMain(void)
     return;
   LocalTime = Parameters.getTicksCB();
   
-  if( IsTimeOut() )
+  if( IsRxTimeOut() )
   {
     TimeOutReset();
     Status = SEND_DISCONNECT;
@@ -141,10 +143,11 @@ void HDLC_ProtocolMain(void)
         TimeOutReset();
         break;
       case SEND_CONFIG_PARAM:
+        if(IsSendDataCB())
+        {
         HDLC_PackSendConfigParam(Parameters.uartSendDataCB); // TODO сделать функцию обёртку для указателя на uartSendDataCB с проверкой указателя на NULL
         Status = WAIT_CONFIG_PARAM_ANSWER;
-        TimeOutReset(); // TODO перенести в обёртку для uartSendDataCB
-        WaitingForResponse = true; // TODO перенести в обёртку для uartSendDataCB
+        }
         break;
 
       case WAIT_CONFIG_PARAM_ANSWER:
@@ -158,10 +161,11 @@ void HDLC_ProtocolMain(void)
           Status = NONE;
         break;
       case SEND_AUTHORIZATION:
-        HDLC_PackSendAuthorization(Parameters.uartSendDataCB, NRS++, ServParam.password); // TODO сделать отдельную функцию или макрос для рассчёте NRS (GetNextNRS())
+        if(IsSendDataCB())
+        {
+        HDLC_PackSendAuthorization(Parameters.uartSendDataCB, GetNextNRS(&NRS), ServParam.password); // TODO сделать отдельную функцию или макрос для рассчёте NRS (GetNextNRS())
         Status = WAIT_AUTHORIZATION_ANSWER;
-        WaitingForResponse = true;
-        TimeOutReset();
+        }
         break;
       case WAIT_AUTHORIZATION_ANSWER:
         if(HDLC_UnpackWaitAuthorization(HDLC_GetBuf, GET_BUF_SIZE) == 0)
@@ -172,25 +176,25 @@ void HDLC_ProtocolMain(void)
         }
         break;
       case SEND_COMAND:
-//        if(Param_pos >= NUMBER_OF_PARAMETERS) Param_pos = 0; // 
-        HDLC_PackSendComand(NRS++,Parameters.uartSendDataCB, Param_pos);
+        if(Param_pos >= NUMBER_OF_PARAMETERS) Param_pos = 0;
+        if(IsSendDataCB())
+        {
+        HDLC_PackSendComand(GetNextNRS(&NRS),Parameters.uartSendDataCB, Param_pos);
         Status =  WAIT_COMAND_ANSWER;
-        TimeOutReset();
-        WaitingForResponse = true;
-        if (NRS>7) NRS=0;
+        }
         break;
       case WAIT_COMAND_ANSWER:
         HDLC_UnpackComand(Rep_Points[Param_pos++], HDLC_GetBuf, GET_BUF_SIZE);
         Status = SEND_COMAND;
         WaitingForResponse = false;
         BufReset();
-        if(Param_pos > NUMBER_OF_PARAMETERS-1) Param_pos=0; // TODO перенести в case SEND_COMAND:
         break;
       case SEND_DISCONNECT:
+        if(IsSendDataCB())
+        {
         HDLC_PackDisconnect(Parameters.uartSendDataCB);
         Status = WAIT_DISCONNECT_ANSWER;
-        TimeOutReset();
-        WaitingForResponse = true;
+        }
         break;
       case WAIT_DISCONNECT_ANSWER:
         HDLC_UnpackDisconnect(HDLC_GetBuf, GET_BUF_SIZE);
@@ -278,7 +282,7 @@ void TimeOutReset(void)
   Timeout = false;
 }
 //----------------------------------------------------------------------------
-bool IsTimeOut(void) // TODO rename IsRxTimeOut
+bool IsRxTimeOut(void) //TODO rename IsRxTimeOut
 {
   uint32_t time = Parameters.getTicksCB();
 
@@ -319,7 +323,7 @@ void HDLC_ProtocolDataReceive(uint8_t* data, uint16_t len)
    }
   }
 }
-// --------------------------------Пароль и адрес----------------------------------
+// -----------------------------Пароль и адрес--------------------------------
 
 // --------------------------------Показания----------------------------------
 float GetVoltageA(void)
@@ -412,3 +416,46 @@ t_HDLCservParam HDLCservParamGET(uint8_t N_serv)
   return ServParam;
 }
 //----------------------------------------------------------------------------
+//????????????????????????????????????
+bool IsSendDataCB(void)
+{
+  if(Parameters.uartSendDataCB != NULL)
+  {
+    TimeOutReset();
+    WaitingForResponse = true;
+    return true;
+  }
+  return false;
+}
+//----------------------------------------------------------------------------
+uint8_t GetNextNRS(uint8_t* NRS)
+{
+  uint8_t* N = NRS;
+  *N=*NRS+1;
+  if (*N>7) *N=0;
+  return (*N - 1);
+}
+//----------------------------------------------------------------------------
+t_MeterParam Dispatcher (t_MeterParam* MeterParam, uint8_t Num_meter)
+{
+  static uint8_t pos=0;
+  
+  if(MeterParam[pos].WaitingForResponse) pos=(pos+1)%Num_meter;
+
+//  MeterParam[0].Num_meter;
+//  MeterParam.Meter_pos;
+/*
+  MeterParam.Meter_ID;
+  MeterParam.Meter_pasvord[8]
+
+  MeterParam.Meter_Status;
+
+  MeterParam.WaitingForResponse;
+  MeterParam.StartTimeoutCounter;
+  MeterParam.NRS;
+  MeterParam.Param_pos;
+  MeterParam.GetBuf;
+  MeterParam.SendBuf;
+*/
+  return MeterParam[pos];
+}
